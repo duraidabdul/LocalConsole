@@ -214,7 +214,7 @@ public class Console: NSObject, UIGestureRecognizerDelegate {
         let attributes: [NSAttributedString.Key: Any] = [
             .paragraphStyle: paragraphStyle,
             .foregroundColor: UIColor.white,
-            .font: UIFont.systemFont(ofSize: 8, weight: .semibold, design: .monospaced)
+            .font: UIFont.systemFont(ofSize: 7, weight: .semibold, design: .monospaced)
         ]
         
         let string: String = {
