@@ -16,7 +16,7 @@ public class Console: NSObject, UIGestureRecognizerDelegate {
     
     public static let shared = Console()
     
-    let consoleSize = CGSize(width: 208, height: 116)
+    let consoleSize = CGSize(width: 212, height: 124)
     
     // Strong reference needed to keep the window alive.
     var consoleWindow: ConsoleWindow?
@@ -214,7 +214,7 @@ public class Console: NSObject, UIGestureRecognizerDelegate {
         let attributes: [NSAttributedString.Key: Any] = [
             .paragraphStyle: paragraphStyle,
             .foregroundColor: UIColor.white,
-            .font: UIFont.systemFont(ofSize: 7, weight: .semibold, design: .monospaced)
+            .font: UIFont.systemFont(ofSize: 8, weight: .semibold, design: .monospaced)
         ]
         
         let string: String = {
