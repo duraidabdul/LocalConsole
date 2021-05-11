@@ -2,7 +2,7 @@
 
 ## **Usage**
 
-1. In your Xcode project, go to File > Swift Packages > Add Package Dependancy...
+1. In your Xcode project, navigate to File > Swift Packages > Add Package Dependancy...
 
 2. Paste the following into the URL field: https://github.com/duraidabdul/LocalConsole/
 
