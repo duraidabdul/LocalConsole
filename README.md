@@ -6,7 +6,7 @@
 
 2. Paste the following into the URL field: https://github.com/duraidabdul/LocalConsole/
 
-Once the package dependancy has been added, import LocalConsole and create an easily accessible global instance of ```Console.shared```.
+3. Once the package dependancy has been added, import LocalConsole and create an easily accessible global instance of ```Console.shared```.
 ```swift
 import LocalConsole
 
