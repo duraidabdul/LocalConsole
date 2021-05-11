@@ -14,7 +14,7 @@ let localConsole = Console.shared
 ```
 
 ## **Usage**
-After preparing the localConsole, it can be conveniently used throughout a project.
+Once prepared, the localConsole can be used throughout your project.
 ```swift
 
 // Show local console.
