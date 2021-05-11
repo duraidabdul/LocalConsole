@@ -1,5 +1,7 @@
 # **LocalConsole**
 
+<img src="https://github.com/duraidabdul/LocalConsole/blob/main/Demo.gif?raw=true" width="250" height="500">
+
 ## **Setup**
 
 1. In your Xcode project, navigate to File > Swift Packages > Add Package Dependancy...
