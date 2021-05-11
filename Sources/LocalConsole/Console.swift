@@ -126,9 +126,9 @@ public class Console: NSObject, UIGestureRecognizerDelegate {
         
         UIView.swizzleDebugBehaviour
         
-        _print(consoleView)
-        _print(menuButton)
-        _print("Hello, world!")
+        print(consoleView)
+        print(menuButton)
+        print("Hello, world!")
     }
     
     public var isVisible = false {
@@ -206,7 +206,7 @@ public class Console: NSObject, UIGestureRecognizerDelegate {
         consoleView.backgroundColor = .black
     }
     
-    public func _print(_ items: Any) {
+    public func print(_ items: Any) {
         
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.headIndent = 7
