@@ -14,7 +14,7 @@ Welcome to LocalConsole! This Swift Package makes on-device debugging easy with 
 ```swift
 import LocalConsole
 
-let localConsole = Console.shared
+let consoleManager = LocalConsoleManager.shared
 ```
 
 ## **Usage**
@@ -22,14 +22,14 @@ Once prepared, the localConsole can be used throughout your project.
 ```swift
 
 // Show local console.
-localConsole.isVisible = true
+consoleManager.isVisible = true
 
 // Hide local console.
-localConsole.isVisible = false
+consoleManager.isVisible = false
 
 // Print items to local console.
-localConsole.print("Hello, world!")
+consoleManager.print("Hello, world!")
 
 // Clear local console text.
-localConsole.clear()
+consoleManager.clear()
 ```
