@@ -33,3 +33,8 @@ localConsoleManager.print("Hello, world!")
 // Clear local console text.
 localConsoleManager.clear()
 ```
+
+## **Upcoming Features**
+* Custom console view size
+* Custom console view font size
+* Support for iOS 13
