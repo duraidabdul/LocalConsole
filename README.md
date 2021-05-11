@@ -1,6 +1,6 @@
 # **LocalConsole**
 
-Welcome to LocalConsole! This Swift Package makes on-device debugging easy with a convenient PiP-style console that can display items in the same way print() will in Xcode. This tool can also dynamically display view frames and restart SpringBoard right from your live app.
+Welcome to LocalConsole! This Swift Package makes on-device debugging easy with a convenient PiP-style console that can display items in the same way ```print()``` will in Xcode. This tool can also dynamically display view frames and restart SpringBoard right from your live app.
 
 <img src="https://github.com/duraidabdul/LocalConsole/blob/main/Demo.gif?raw=true" width="250" height="500">
 
