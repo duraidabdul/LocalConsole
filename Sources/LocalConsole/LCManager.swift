@@ -12,9 +12,9 @@ import UIKit
 var GLOBAL_DEBUG_BORDERS = false
 var GLOBAL_BORDER_TRACKERS: [BorderManager] = []
 
-public class Console: NSObject, UIGestureRecognizerDelegate {
+public class LCManager: NSObject, UIGestureRecognizerDelegate {
     
-    public static let shared = Console()
+    public static let shared = LCManager()
     
     let consoleSize = CGSize(width: 212, height: 124)
     
