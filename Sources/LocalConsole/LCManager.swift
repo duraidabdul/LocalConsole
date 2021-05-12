@@ -73,11 +73,18 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         consoleView.center = possibleEndpoints.first!
         consoleView.alpha = 0
         
-        consoleView.layer.borderWidth = 1
-        consoleView.layer.borderColor = UIColor(white: 1, alpha: 0.08).cgColor
-        
         consoleView.layer.cornerRadius = 20
         consoleView.layer.cornerCurve = .continuous
+        
+        let borderLayer = CALayer()
+        borderLayer.frame = CGRect(x: -1, y: -1,
+                                   width: consoleSize.width + 2,
+                                   height: consoleSize.height + 2)
+        borderLayer.borderWidth = 1
+        borderLayer.borderColor = UIColor(white: 1, alpha: 0.06).cgColor
+        borderLayer.cornerRadius = consoleView.layer.cornerRadius + 1
+        borderLayer.cornerCurve = .continuous
+        consoleView.layer.addSublayer(borderLayer)
         
         // Configure text view.
         consoleTextView.frame = CGRect(x: 0, y: 2, width: consoleSize.width, height: consoleSize.height - 4)
