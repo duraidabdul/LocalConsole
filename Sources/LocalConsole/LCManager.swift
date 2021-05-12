@@ -125,10 +125,6 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         consoleView.addSubview(menuButton!)
         
         UIView.swizzleDebugBehaviour
-        
-        print(consoleView)
-        print(menuButton)
-        print("Hello, world!")
     }
     
     public var isVisible = false {
