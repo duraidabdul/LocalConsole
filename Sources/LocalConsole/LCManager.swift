@@ -115,16 +115,26 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         // Prepare menu button.
         let diameter = CGFloat(26)
         
-        menuButton = UIButton(frame: CGRect(x: consoleView.bounds.width - diameter - (consoleView.layer.cornerRadius - diameter / 2),
-                                            y: consoleView.bounds.height - diameter - (consoleView.layer.cornerRadius - diameter / 2),
-                                            width: diameter, height: diameter))
-        menuButton.layer.cornerRadius = diameter / 2
-        menuButton.backgroundColor = UIColor(white: 1, alpha: 0.20)
+        // This tuned button frame is used to adjust where the menu appears.
+        menuButton = UIButton(frame: CGRect(x: consoleView.bounds.width - 44,
+                                            y: consoleView.bounds.height - 36,
+                                            width: 44,
+                                            height: 36 + 4 /*Offests the context menu by the desired amount*/))
+        
+        let circleFrame = CGRect(
+            x: menuButton.bounds.width - diameter - (consoleView.layer.cornerRadius - diameter / 2),
+            y: menuButton.bounds.height - diameter - (consoleView.layer.cornerRadius - diameter / 2) - 4,
+            width: diameter, height: diameter)
+        
+        let circle = UIView(frame: circleFrame)
+        circle.backgroundColor = UIColor(white: 0.2, alpha: 0.95)
+        circle.layer.cornerRadius = diameter / 2
+        menuButton.addSubview(circle)
         
         let ellipsisImage = UIImageView(image: UIImage(systemName: "ellipsis", withConfiguration: UIImage.SymbolConfiguration(pointSize: 16)))
-        ellipsisImage.frame.size = menuButton!.bounds.size
+        ellipsisImage.frame.size = circle.bounds.size
         ellipsisImage.contentMode = .center
-        menuButton.addSubview(ellipsisImage)
+        circle.addSubview(ellipsisImage)
         
         menuButton.tintColor = UIColor(white: 1, alpha: 0.75)
         menuButton.menu = makeMenu()
