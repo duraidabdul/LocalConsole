@@ -14,7 +14,7 @@ Welcome to LocalConsole! This Swift Package makes on-device debugging easy with 
 ```swift
 import LocalConsole
 
-let localConsoleManager = LocalConsoleManager.shared
+let localConsoleManager = LCManager.shared
 ```
 
 ## **Usage**
