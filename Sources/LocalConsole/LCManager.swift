@@ -56,7 +56,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         if let windowScene = windowScene as? UIWindowScene {
             consoleWindow = ConsoleWindow(windowScene: windowScene)
             consoleWindow?.frame = UIScreen.main.bounds
-            consoleWindow?.windowLevel = UIWindow.Level.normal
+            consoleWindow?.windowLevel = UIWindow.Level.statusBar
             consoleWindow?.isHidden = false
             consoleWindow?.addSubview(consoleView)
             
@@ -76,7 +76,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         consoleView.layer.borderWidth = 1
         consoleView.layer.borderColor = UIColor(white: 1, alpha: 0.08).cgColor
         
-        consoleView.layer.cornerRadius = 19
+        consoleView.layer.cornerRadius = 20
         consoleView.layer.cornerCurve = .continuous
         
         // Configure text view.
@@ -106,7 +106,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         consoleView.addGestureRecognizer(longPressRecognizer)
         
         // Prepare menu button.
-        let diameter = CGFloat(25)
+        let diameter = CGFloat(26)
         
         menuButton = UIButton(frame: CGRect(x: consoleView.bounds.width - diameter - (consoleView.layer.cornerRadius - diameter / 2),
                                             y: consoleView.bounds.height - diameter - (consoleView.layer.cornerRadius - diameter / 2),
