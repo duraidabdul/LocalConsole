@@ -16,6 +16,16 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     
     public static let shared = LCManager()
     
+    // Set the font size. The font can be set to a minimum value of 5.0 and a maximum value of 20.0. The default value is 7.5.
+    public var fontSize: CGFloat = 7.5 {
+        didSet {
+            guard fontSize >= 4 else { fontSize = 4; return }
+            guard fontSize <= 20 else { fontSize = 20; return }
+            
+            setAttributedText(consoleTextView.text)
+        }
+    }
+    
     let consoleSize = CGSize(width: 212, height: 124)
     
     // Strong reference needed to keep the window alive.
@@ -144,6 +154,8 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         UIView.swizzleDebugBehaviour
     }
     
+    // MARK: - Public
+    
     public var isVisible = false {
         
         didSet {
@@ -165,6 +177,27 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             }
         }
     }
+    
+    /// Print items to the console view.
+    public func print(_ items: Any) {
+        
+        let string: String = {
+            if consoleTextView.text == "" {
+                return "\(items)"
+            } else {
+                return "\(items)\n" + consoleTextView.text
+            }
+        }()
+        
+        setAttributedText(string)
+    }
+    
+    /// Clear text in the console view.
+    public func clear() {
+        consoleTextView.text = ""
+    }
+    
+    // MARK: - Private
     
     private var debugBordersEnabled = false {
         didSet {
@@ -219,30 +252,17 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         consoleView.backgroundColor = .black
     }
     
-    public func print(_ items: Any) {
-        
+    func setAttributedText(_ string: String) {
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.headIndent = 7
         
         let attributes: [NSAttributedString.Key: Any] = [
             .paragraphStyle: paragraphStyle,
             .foregroundColor: UIColor.white,
-            .font: UIFont.systemFont(ofSize: 7, weight: .semibold, design: .monospaced)
+            .font: UIFont.systemFont(ofSize: fontSize, weight: .semibold, design: .monospaced)
         ]
         
-        let string: String = {
-            if consoleTextView.attributedText.string == "" {
-                return "\(items)"
-            } else {
-                return "\(items)\n" + consoleTextView.text
-            }
-        }()
-        
         consoleTextView.attributedText = NSAttributedString(string: string, attributes: attributes)
-    }
-    
-    public func clear() {
-        consoleTextView.text = ""
     }
     
     func makeMenu() -> UIMenu {
