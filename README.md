@@ -26,7 +26,9 @@ localConsoleManager.isVisible = true
 
 // Hide the console view.
 localConsoleManager.isVisible = false
+```
 
+```swift
 // Print items to the console view.
 localConsoleManager.print("Hello, world!")
 
@@ -34,7 +36,12 @@ localConsoleManager.print("Hello, world!")
 localConsoleManager.clear()
 ```
 
+```swift
+// Change the console view font size.
+localConsoleManager.fontSize = 5
+```
+
+
 ## **Upcoming Features**
 * Custom console view size
-* Custom console view font size
 * Support for iOS 13
