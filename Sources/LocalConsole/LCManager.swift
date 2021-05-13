@@ -16,7 +16,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     
     public static let shared = LCManager()
     
-    // Set the font size. The font can be set to a minimum value of 5.0 and a maximum value of 20.0. The default value is 7.5.
+    /// Set the font size. The font can be set to a minimum value of 5.0 and a maximum value of 20.0. The default value is 7.5.
     public var fontSize: CGFloat = 7.5 {
         didSet {
             guard fontSize >= 4 else { fontSize = 4; return }
@@ -26,23 +26,29 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         }
     }
     
+    /// The fixed size of the console view.
     let consoleSize = CGSize(width: 212, height: 124)
     
-    // Strong reference needed to keep the window alive.
+    /// Strong reference keeps the window alive.
     var consoleWindow: ConsoleWindow?
     
-    // The console needs a view controller to display context menus.
+    // The console needs a parent view controller in order to display context menus.
     let viewController = UIViewController()
     lazy var consoleView = viewController.view!
     
+    /// Text view that displays printed items.
     let consoleTextView = UITextView()
     
+    /// Button that reveals menu.
     var menuButton: UIButton!
     
+    /// Tracks whether the PiP console is in  text view scroll mode or pan mode.
     var scrollLocked = true
     
+    /// Feedback generator for the long press action.
     let feedbackGenerator = UISelectionFeedbackGenerator()
     
+    /// Gesture endpoints. Each point represents a corner of the screen. TODO: Handle screen rotation.
     lazy var possibleEndpoints = [CGPoint(x: consoleSize.width / 2 + 12,
                                           y: UIApplication.shared.statusBarHeight + consoleSize.height / 2  + 5),
                                   CGPoint(x: UIScreen.size.width - consoleSize.width / 2 - 12,
@@ -139,6 +145,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         let circle = UIView(frame: circleFrame)
         circle.backgroundColor = UIColor(white: 0.2, alpha: 0.95)
         circle.layer.cornerRadius = diameter / 2
+        circle.isUserInteractionEnabled = false
         menuButton.addSubview(circle)
         
         let ellipsisImage = UIImageView(image: UIImage(systemName: "ellipsis", withConfiguration: UIImage.SymbolConfiguration(pointSize: 16)))
@@ -290,8 +297,14 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                                     }
                                     animator.startAnimation()
                                 })
+        let primarySection = UIMenu(title: "", options: .displayInline, children: [viewFrames, respring])
         
-        return UIMenu(title: "", children: [viewFrames, respring])
+        let clear = UIAction(title: "Clear Console",
+                             image: UIImage(systemName: "xmark.square"), handler: { _ in
+                                self.clear()
+                             })
+        
+        return UIMenu(title: "", children: [primarySection, clear])
     }
     
     @objc func longPressAction(recognizer: UILongPressGestureRecognizer) {
