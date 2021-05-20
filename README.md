@@ -42,6 +42,9 @@ localConsoleManager.fontSize = 5
 ```
 
 
-## **Upcoming Features**
+## **To-Do**
 * Custom console view size
 * Support for iOS 13
+* Screen edge console hiding
+* Custom pinch to resize gesture
+* Make console view reactive to landscape/portrait switch
