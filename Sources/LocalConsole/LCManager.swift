@@ -205,6 +205,11 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         consoleTextView.text = ""
     }
     
+    /// Copy the console view text to the device's clipboard
+    public func copyToClipboard() {
+        UIPasteboard.general.string = consoleTextView.text
+    }
+    
     // MARK: - Private
     
     private var debugBordersEnabled = false {
@@ -305,7 +310,12 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                                 self.clear()
                              })
         
-        return UIMenu(title: "", children: [primarySection, clear])
+        let copyToClipboard = UIAction(title: "Copy to clipboard",
+                                       image: UIImage(systemName: "paperclip"), handler: { _ in
+                                        self.copyToClipboard()
+                                       })
+        
+        return UIMenu(title: "", children: [primarySection, clear, copyToClipboard])
     }
     
     @objc func longPressAction(recognizer: UILongPressGestureRecognizer) {
