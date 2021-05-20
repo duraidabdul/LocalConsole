@@ -49,14 +49,15 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     let feedbackGenerator = UISelectionFeedbackGenerator()
     
     /// Gesture endpoints. Each point represents a corner of the screen. TODO: Handle screen rotation.
-    lazy var possibleEndpoints = [CGPoint(x: consoleSize.width / 2 + 12,
-                                          y: UIApplication.shared.statusBarHeight + consoleSize.height / 2  + 5),
-                                  CGPoint(x: UIScreen.size.width - consoleSize.width / 2 - 12,
-                                          y: UIApplication.shared.statusBarHeight + consoleSize.height / 2 + 5),
-                                  CGPoint(x: consoleSize.width / 2 + 12,
-                                          y: UIScreen.size.height - consoleSize.height / 2 - 56),
-                                  CGPoint(x: UIScreen.size.width - consoleSize.width / 2 - 12,
-                                          y: UIScreen.size.height - consoleSize.height / 2 - 56)]
+    var possibleEndpoints: [CGPoint] { [CGPoint(x: consoleSize.width / 2 + 12,
+                                                y: UIApplication.shared.statusBarHeight + consoleSize.height / 2  + 5),
+                                        CGPoint(x: UIScreen.size.width - consoleSize.width / 2 - 12,
+                                                y: UIApplication.shared.statusBarHeight + consoleSize.height / 2 + 5),
+                                        CGPoint(x: consoleSize.width / 2 + 12,
+                                                y: UIScreen.size.height - consoleSize.height / 2 - 56),
+                                        CGPoint(x: UIScreen.size.width - consoleSize.width / 2 - 12,
+                                                y: UIScreen.size.height - consoleSize.height / 2 - 56)]
+    }
     
     lazy var initialViewLocation: CGPoint = .zero
     
