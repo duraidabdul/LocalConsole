@@ -326,6 +326,7 @@ class PlatterView: UIView {
         autoresizingMask = [.flexibleWidth, .flexibleHeight]
         
         layer.shadowRadius = 10
+        layer.shadowOpacity = 0.125
         layer.shadowOffset = CGSize(width: 0, height: 0)
         
         layer.borderColor = dynamicBorderColor.cgColor
@@ -501,7 +502,6 @@ class PlatterView: UIView {
     
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         layer.borderColor = dynamicBorderColor.cgColor
-        layer.shadowOpacity = traitCollection.userInterfaceStyle == .dark ? 0.25 : 0.125
     }
     
     required init?(coder: NSCoder) {
