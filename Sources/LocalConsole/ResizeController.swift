@@ -325,13 +325,11 @@ class PlatterView: UIView {
         
         layer.shadowRadius = 10
         layer.shadowOffset = CGSize(width: 0, height: 0)
-        layer.shadowOpacity = 0.125
         
-        layer.borderColor = UIColor(white: 0, alpha: 0.125).cgColor
+        layer.borderColor = dynamicBorderColor.cgColor
         layer.borderWidth = 1 / UIScreen.main.scale
         layer.cornerRadius = 30
         layer.cornerCurve = .continuous
-//        view.layer.shadowOpacity = traitCollection.userInterfaceStyle == .dark ? 0 : 0.125
         
         let blurView = UIVisualEffectView(effect: UIBlurEffect(style: .systemThickMaterial))
         
@@ -489,6 +487,20 @@ class PlatterView: UIView {
         }.startAnimation()
         
         backgroundButton.isHidden = true
+    }
+    
+    
+    let dynamicBorderColor = UIColor(dynamicProvider: { traitCollection in
+        if traitCollection.userInterfaceStyle == .dark {
+            return UIColor(white: 1, alpha: 0.075)
+        } else {
+            return UIColor(white: 0, alpha: 0.125)
+        }
+    })
+    
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        layer.borderColor = dynamicBorderColor.cgColor
+        layer.shadowOpacity = traitCollection.userInterfaceStyle == .dark ? 0.25 : 0.125
     }
     
     required init?(coder: NSCoder) {
