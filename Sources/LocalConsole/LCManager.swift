@@ -26,8 +26,23 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         }
     }
     
+    let defaultConsoleSize = CGSize(width: 212, height: 124)
+    
     /// The fixed size of the console view.
-    let consoleSize = CGSize(width: 212, height: 124)
+    lazy var consoleSize = defaultConsoleSize {
+        didSet {
+            consoleView.frame.size = consoleSize
+            if consoleView.frame.size.width > ResizeController.kMaxConsoleWidth {
+                consoleTextView.frame.size.width = ResizeController.kMaxConsoleWidth
+            } else {
+                consoleTextView.frame.size.width = consoleSize.width
+            }
+            // TODO: Snap to nearest position.
+            
+            UserDefaults.standard.set(consoleSize.width, forKey: "LocalConsole_Width")
+            UserDefaults.standard.set(consoleSize.height, forKey: "LocalConsole_Height")
+        }
+    }
     
     /// Strong reference keeps the window alive.
     var consoleWindow: ConsoleWindow?
@@ -48,15 +63,26 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     /// Feedback generator for the long press action.
     let feedbackGenerator = UISelectionFeedbackGenerator()
     
+    lazy var panRecognizer = UIPanGestureRecognizer(target: self, action: #selector(consolePiPPanner(recognizer:)))
+    lazy var longPressRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(longPressAction(recognizer:)))
+    
     /// Gesture endpoints. Each point represents a corner of the screen. TODO: Handle screen rotation.
-    var possibleEndpoints: [CGPoint] { [CGPoint(x: consoleSize.width / 2 + 12,
-                                                y: UIApplication.shared.statusBarHeight + consoleSize.height / 2  + 5),
-                                        CGPoint(x: UIScreen.size.width - consoleSize.width / 2 - 12,
-                                                y: UIApplication.shared.statusBarHeight + consoleSize.height / 2 + 5),
-                                        CGPoint(x: consoleSize.width / 2 + 12,
-                                                y: UIScreen.size.height - consoleSize.height / 2 - 56),
-                                        CGPoint(x: UIScreen.size.width - consoleSize.width / 2 - 12,
-                                                y: UIScreen.size.height - consoleSize.height / 2 - 56)]
+    var possibleEndpoints: [CGPoint] {
+        if consoleSize.width < UIScreen.portraitSize.width - 112 {
+            return [CGPoint(x: consoleSize.width / 2 + 12,
+                            y: (UIScreen.hasRoundedCorners ? 44 : 16) + consoleSize.height / 2 + 12),
+                    CGPoint(x: UIScreen.portraitSize.width - consoleSize.width / 2 - 12,
+                            y: (UIScreen.hasRoundedCorners ? 44 : 16) + consoleSize.height / 2 + 12),
+                    CGPoint(x: consoleSize.width / 2 + 12,
+                            y: UIScreen.portraitSize.height - consoleSize.height / 2 - (consoleWindow?.safeAreaInsets.bottom ?? 0) - 12),
+                    CGPoint(x: UIScreen.portraitSize.width - consoleSize.width / 2 - 12,
+                            y: UIScreen.portraitSize.height - consoleSize.height / 2 - (consoleWindow?.safeAreaInsets.bottom ?? 0) - 12)]
+        } else {
+            return [CGPoint(x: UIScreen.portraitSize.width / 2,
+                            y: (UIScreen.hasRoundedCorners ? 44 : 16) + consoleSize.height / 2 + 12),
+                    CGPoint(x: UIScreen.portraitSize.width / 2,
+                            y: UIScreen.portraitSize.height - consoleSize.height / 2 - (consoleWindow?.safeAreaInsets.bottom ?? 0) - 12)]
+        }
     }
     
     lazy var initialViewLocation: CGPoint = .zero
@@ -80,8 +106,9 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             UIWindow.swizzleStatusBarAppearanceOverride
         }
         
-        // Configure console view.
-        consoleView.frame.size = consoleSize
+        consoleSize = CGSize(width: UserDefaults.standard.object(forKey: "LocalConsole_Width") as? CGFloat ?? consoleSize.width,
+                             height: UserDefaults.standard.object(forKey: "LocalConsole_Height") as? CGFloat ?? consoleSize.height)
+        
         consoleView.backgroundColor = .black
         
         consoleView.layer.shadowRadius = 16
@@ -93,15 +120,16 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         consoleView.layer.cornerRadius = 20
         consoleView.layer.cornerCurve = .continuous
         
-        let borderLayer = CALayer()
-        borderLayer.frame = CGRect(x: -1, y: -1,
+        let borderView = UIView()
+        borderView.frame = CGRect(x: -1, y: -1,
                                    width: consoleSize.width + 2,
                                    height: consoleSize.height + 2)
-        borderLayer.borderWidth = 1
-        borderLayer.borderColor = UIColor(white: 1, alpha: 0.08).cgColor
-        borderLayer.cornerRadius = consoleView.layer.cornerRadius + 1
-        borderLayer.cornerCurve = .continuous
-        consoleView.layer.addSublayer(borderLayer)
+        borderView.layer.borderWidth = 1
+        borderView.layer.borderColor = UIColor(white: 1, alpha: 0.08).cgColor
+        borderView.layer.cornerRadius = consoleView.layer.cornerRadius + 1
+        borderView.layer.cornerCurve = .continuous
+        borderView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        consoleView.addSubview(borderView)
         
         // Configure text view.
         consoleTextView.frame = CGRect(x: 0, y: 2, width: consoleSize.width, height: consoleSize.height - 4)
@@ -112,17 +140,16 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         consoleTextView.isSelectable = false
         consoleTextView.showsVerticalScrollIndicator = false
         consoleTextView.contentInsetAdjustmentBehavior = .never
+        consoleTextView.autoresizingMask = [.flexibleHeight]
         consoleView.addSubview(consoleTextView)
         
         // Configure gesture recognizers.
-        let panRecognizer = UIPanGestureRecognizer(target: self, action: #selector(consolePiPPanner(recognizer:)))
         panRecognizer.maximumNumberOfTouches = 1
         panRecognizer.delegate = self
         
         let tapRecognizer = UITapStartEndGestureRecognizer(target: self, action: #selector(consolePiPTapStartEnd(recognizer:)))
         tapRecognizer.delegate = self
         
-        let longPressRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(longPressAction(recognizer:)))
         longPressRecognizer.minimumPressDuration = 0.1
         
         consoleView.addGestureRecognizer(panRecognizer)
@@ -137,6 +164,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                                             y: consoleView.bounds.height - 36,
                                             width: 44,
                                             height: 36 + 4 /*Offests the context menu by the desired amount*/))
+        menuButton.autoresizingMask = [.flexibleLeftMargin, .flexibleTopMargin]
         
         let circleFrame = CGRect(
             x: menuButton.bounds.width - diameter - (consoleView.layer.cornerRadius - diameter / 2),
@@ -188,7 +216,6 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     
     /// Print items to the console view.
     public func print(_ items: Any) {
-        
         let string: String = {
             if consoleTextView.text == "" {
                 return "\(items)"
@@ -274,6 +301,23 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     }
     
     func makeMenu() -> UIMenu {
+        
+        let resize = UIAction(title: "Resize Console",
+                              image: UIImage(systemName: "arrow.left.and.right.square"), handler: { _ in
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    ResizeController.shared.isActive.toggle()
+                                    ResizeController.shared.platterView.reveal()
+                                }
+                                
+                              })
+        
+        let clear = UIAction(title: "Clear Console",
+                             image: UIImage(systemName: "xmark.square"), handler: { _ in
+                                self.clear()
+                             })
+        
+        let consoleActions = UIMenu(title: "", options: .displayInline, children: [clear, resize])
+        
         let viewFrames = UIAction(title: debugBordersEnabled ? "Hide View Frames" : "Show View Frames",
                                   image: UIImage(systemName: "rectangle.3.offgrid"), handler: { _ in
                                     self.debugBordersEnabled.toggle()
@@ -298,14 +342,9 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                                     }
                                     animator.startAnimation()
                                 })
-        let primarySection = UIMenu(title: "", options: .displayInline, children: [viewFrames, respring])
+        let debugActions = UIMenu(title: "", options: .displayInline, children: [viewFrames, respring])
         
-        let clear = UIAction(title: "Clear Console",
-                             image: UIImage(systemName: "xmark.square"), handler: { _ in
-                                self.clear()
-                             })
-        
-        return UIMenu(title: "", children: [primarySection, clear])
+        return UIMenu(title: "", children: [consoleActions, debugActions])
     }
     
     @objc func longPressAction(recognizer: UILongPressGestureRecognizer) {
@@ -437,9 +476,10 @@ class ConsoleWindow: UIWindow {
     
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         
-        let hitView = super.hitTest(point, with: event)!
-        
-        return hitView.isKind(of: ConsoleWindow.self) ? nil : hitView
+        if let hitView = super.hitTest(point, with: event) {
+            return hitView.isKind(of: ConsoleWindow.self) ? nil : hitView
+        }
+        return super.hitTest(point, with: event)
     }
 }
 
