@@ -128,7 +128,9 @@ class ResizeController {
                     
                     LCManager.shared.menuButton.alpha = 0
                     
-                    LCManager.shared.consoleWindow?.backgroundColor = UIColor(white: 0, alpha: 0.1)
+                    LCManager.shared.consoleWindow?.backgroundColor = UIColor(dynamicProvider: { traitCollection in
+                        UIColor(white: 0, alpha: traitCollection.userInterfaceStyle == .light ? 0.1 : 0.3)
+                    })
                 }.startAnimation()
                 
                 UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
@@ -489,7 +491,6 @@ class PlatterView: UIView {
         backgroundButton.isHidden = true
     }
     
-    
     let dynamicBorderColor = UIColor(dynamicProvider: { traitCollection in
         if traitCollection.userInterfaceStyle == .dark {
             return UIColor(white: 1, alpha: 0.075)
@@ -602,3 +603,13 @@ class PlatterView: UIView {
         }
     }
 }
+
+
+
+
+
+
+
+
+// MARK: HI
+/// To enter resize mode, enter the console menu and tap "Resize Console."
