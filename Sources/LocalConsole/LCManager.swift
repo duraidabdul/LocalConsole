@@ -225,11 +225,17 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         }()
         
         setAttributedText(string)
+        
+        // Update the context menu to show the clipboard/clear actions.
+        menuButton.menu = makeMenu()
     }
     
     /// Clear text in the console view.
     public func clear() {
         consoleTextView.text = ""
+        
+        // Update the context menu to hide the clipboard/clear actions.
+        menuButton.menu = makeMenu()
     }
     
     /// Copy the console view text to the device's clipboard.
@@ -307,26 +313,25 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     
     func makeMenu() -> UIMenu {
         
+        let copy = UIAction(title: "Copy",
+                                       image: UIImage(systemName: "doc.on.doc"), handler: { _ in
+                                        self.copyToClipboard()
+                                       })
+        
         let resize = UIAction(title: "Resize Console",
                               image: UIImage(systemName: "arrow.left.and.right.square"), handler: { _ in
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                     ResizeController.shared.isActive.toggle()
                                     ResizeController.shared.platterView.reveal()
                                 }
-                                
                               })
         
-        let copyToClipboard = UIAction(title: "Copy to Clipboard",
-                                       image: UIImage(systemName: "doc.on.clipboard"), handler: { _ in
-                                        self.copyToClipboard()
-                                       })
-      
         let clear = UIAction(title: "Clear Console",
                              image: UIImage(systemName: "xmark.square"), handler: { _ in
                                 self.clear()
                              })
         
-        let consoleActions = UIMenu(title: "", options: .displayInline, children: [clear, copyToClipboard, resize])
+        let consoleActions = UIMenu(title: "", options: .displayInline, children: [clear, resize])
         
         let viewFrames = UIAction(title: debugBordersEnabled ? "Hide View Frames" : "Show View Frames",
                                   image: UIImage(systemName: "rectangle.3.offgrid"), handler: { _ in
@@ -354,7 +359,16 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                                 })
         let debugActions = UIMenu(title: "", options: .displayInline, children: [viewFrames, respring])
         
-        return UIMenu(title: "", children: [consoleActions, debugActions])
+        var menuContent: [UIMenuElement] = []
+        
+        if consoleTextView.text != "" {
+            menuContent.append(contentsOf: [copy, consoleActions])
+        } else {
+            menuContent.append(resize)
+        }
+        menuContent.append(debugActions)
+        
+        return UIMenu(title: "", children: menuContent)
     }
     
     @objc func longPressAction(recognizer: UILongPressGestureRecognizer) {
