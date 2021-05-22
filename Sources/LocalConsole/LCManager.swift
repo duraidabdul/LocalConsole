@@ -239,7 +239,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     }
     
     /// Copy the console view text to the device's clipboard.
-    public func copyToClipboard() {
+    public func copy() {
         UIPasteboard.general.string = consoleTextView.text
     }
     
@@ -315,7 +315,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         
         let copy = UIAction(title: "Copy",
                                        image: UIImage(systemName: "doc.on.doc"), handler: { _ in
-                                        self.copyToClipboard()
+                                        self.copy()
                                        })
         
         let resize = UIAction(title: "Resize Console",
