@@ -603,13 +603,3 @@ class PlatterView: UIView {
         }
     }
 }
-
-
-
-
-
-
-
-
-// MARK: HI
-/// To enter resize mode, enter the console menu and tap "Resize Console."
