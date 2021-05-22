@@ -34,6 +34,9 @@ localConsoleManager.print("Hello, world!")
 
 // Clear text in the console view.
 localConsoleManager.clear()
+
+// Copy the console view text to the device's clipboard.
+localConsoleManager.copy()
 ```
 
 ```swift
