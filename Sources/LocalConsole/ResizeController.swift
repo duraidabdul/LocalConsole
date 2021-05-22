@@ -114,14 +114,14 @@ class ResizeController {
             // Ensure initial autolayout is performed unanimated.
             LCManager.shared.consoleWindow?.layoutIfNeeded()
             
-            // Ensure background color animates in right the first time.
-            LCManager.shared.consoleWindow?.backgroundColor = .clear
-            
             if isActive {
                 
                 if LCManager.shared.consoleView.traitCollection.userInterfaceStyle == .light {
                     LCManager.shared.consoleView.layer.shadowOpacity = 0.25
                 }
+                
+                // Ensure background color animates in right the first time.
+                LCManager.shared.consoleWindow?.backgroundColor = .clear
                 
                 UIViewPropertyAnimator(duration: 0.6, dampingRatio: 1) {
                     LCManager.shared.consoleView.center = self.consoleCenterPoint
