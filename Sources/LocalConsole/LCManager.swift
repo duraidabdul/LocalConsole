@@ -326,7 +326,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                                 self.clear()
                              })
         
-        let consoleActions = UIMenu(title: "", options: .displayInline, children: [clear, resize])
+        let consoleActions = UIMenu(title: "", options: .displayInline, children: [clear, copyToClipboard, resize])
         
         let viewFrames = UIAction(title: debugBordersEnabled ? "Hide View Frames" : "Show View Frames",
                                   image: UIImage(systemName: "rectangle.3.offgrid"), handler: { _ in
