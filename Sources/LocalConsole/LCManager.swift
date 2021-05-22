@@ -232,6 +232,11 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         consoleTextView.text = ""
     }
     
+    /// Copy the console view text to the device's clipboard.
+    public func copyToClipboard() {
+        UIPasteboard.general.string = consoleTextView.text
+    }
+    
     // MARK: - Private
     
     private var debugBordersEnabled = false {
@@ -311,6 +316,11 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                                 
                               })
         
+        let copyToClipboard = UIAction(title: "Copy to Clipboard",
+                                       image: UIImage(systemName: "doc.on.clipboard"), handler: { _ in
+                                        self.copyToClipboard()
+                                       })
+      
         let clear = UIAction(title: "Clear Console",
                              image: UIImage(systemName: "xmark.square"), handler: { _ in
                                 self.clear()
