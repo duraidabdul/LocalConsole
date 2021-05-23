@@ -32,10 +32,10 @@ localConsoleManager.isVisible = false
 // Print items to the console view.
 localConsoleManager.print("Hello, world!")
 
-// Clear text in the console view.
+// Clear console text.
 localConsoleManager.clear()
 
-// Copy the console view text to the device's clipboard.
+// Copy console text.
 localConsoleManager.copy()
 ```
 
