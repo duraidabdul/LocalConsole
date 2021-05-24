@@ -57,7 +57,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     /// Button that reveals menu.
     lazy var menuButton = UIButton()
     
-    /// Tracks whether the PiP console is in  text view scroll mode or pan mode.
+    /// Tracks whether the PiP console is in text view scroll mode or pan mode.
     var scrollLocked = true
     
     /// Feedback generator for the long press action.
