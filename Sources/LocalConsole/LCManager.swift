@@ -55,7 +55,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     let consoleTextView = UITextView()
     
     /// Button that reveals menu.
-    var menuButton: UIButton!
+    lazy var menuButton = UIButton()
     
     /// Tracks whether the PiP console is in  text view scroll mode or pan mode.
     var scrollLocked = true
@@ -90,21 +90,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     override init() {
         super.init()
         
-        // Configure console window.
-        let windowScene = UIApplication.shared
-            .connectedScenes
-            .filter { $0.activationState == .foregroundActive }
-            .first
-        
-        if let windowScene = windowScene as? UIWindowScene {
-            consoleWindow = ConsoleWindow(windowScene: windowScene)
-            consoleWindow?.frame = UIScreen.main.bounds
-            consoleWindow?.windowLevel = UIWindow.Level.statusBar
-            consoleWindow?.isHidden = false
-            consoleWindow?.addSubview(consoleView)
-            
-            UIWindow.swizzleStatusBarAppearanceOverride
-        }
+        configureWindow()
         
         consoleSize = CGSize(width: UserDefaults.standard.object(forKey: "LocalConsole_Width") as? CGFloat ?? consoleSize.width,
                              height: UserDefaults.standard.object(forKey: "LocalConsole_Height") as? CGFloat ?? consoleSize.height)
@@ -185,9 +171,56 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         menuButton.tintColor = UIColor(white: 1, alpha: 0.75)
         menuButton.menu = makeMenu()
         menuButton.showsMenuAsPrimaryAction = true
-        consoleView.addSubview(menuButton!)
+        consoleView.addSubview(menuButton)
         
         UIView.swizzleDebugBehaviour
+    }
+    
+    /// Adds a LocalConsole window to the app's main scene.
+    func configureWindow() {
+        var windowSceneFound = false
+        
+        // Configure console window.
+        func fetchWindowScene() {
+            let windowScene = UIApplication.shared
+                .connectedScenes
+                .filter { $0.activationState == .foregroundActive }
+                .first
+            
+            if let windowScene = windowScene as? UIWindowScene {
+                
+                windowSceneFound = true
+                
+                consoleWindow = ConsoleWindow(windowScene: windowScene)
+                consoleWindow?.frame = UIScreen.main.bounds
+                consoleWindow?.windowLevel = UIWindow.Level.statusBar
+                consoleWindow?.isHidden = false
+                consoleWindow?.addSubview(consoleView)
+                
+                UIWindow.swizzleStatusBarAppearanceOverride
+            }
+        }
+        
+        fetchWindowScene()
+        
+        /// Ensures the window is configured (i.e. scene has been found). If not, delay and wait for a scene to prepare itself, then try again.
+        for i in 1...10 {
+            
+            let delay = Double(i) / 10
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [self] in
+                
+                guard !windowSceneFound else { return }
+                
+                fetchWindowScene()
+                
+                if isVisible {
+                    isVisible = false
+                    consoleView.layer.removeAllAnimations()
+                    isVisible = true
+                }
+            }
+        }
     }
     
     // MARK: - Public
@@ -336,7 +369,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         let viewFrames = UIAction(title: debugBordersEnabled ? "Hide View Frames" : "Show View Frames",
                                   image: UIImage(systemName: "rectangle.3.offgrid"), handler: { _ in
                                     self.debugBordersEnabled.toggle()
-                                    self.menuButton?.menu = self.makeMenu()
+                                    self.menuButton.menu = self.makeMenu()
                                   })
         
         let respring = UIAction(title: "Restart SpringBoard",
