@@ -308,19 +308,20 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     }
     
     func systemReport() {
-        print("Screen Scale:        \(UIScreen.main.scale)\n")
-        print("Screen Size:         \(UIScreen.main.bounds.size)")
-        print("Screen Radius:       \(UIScreen.main.value(forKey: "_displayCornerRadius") as! CGFloat)")
-        print("Max Frame Rate:      \(UIScreen.main.maximumFramesPerSecond) Hz")
-        print("Low Power Mode:      \(ProcessInfo.processInfo.isLowPowerModeEnabled)")
-        print("System Uptime:       \(Int(ProcessInfo.processInfo.systemUptime))s")
-        print("OS Version:          \(versionString)")
-        print("Thermal State:       \(thermalState)")
-        print("Processor Cores:     \(Int(ProcessInfo.processInfo.processorCount))")
-        print("Device RAM:          \(round(100 * Double(ProcessInfo.processInfo.physicalMemory) * pow(10, -9)) / 100) GB")
-        print("Architecture:        \(deviceArchitecture)")
-        print("Model:               \(modelIdentifier)")
-        
+        DispatchQueue.main.async { [self] in
+            print("Screen Scale:        \(UIScreen.main.scale)\n")
+            print("Screen Size:         \(UIScreen.main.bounds.size)")
+            print("Screen Radius:       \(UIScreen.main.value(forKey: "_displayCornerRadius") as! CGFloat)")
+            print("Max Frame Rate:      \(UIScreen.main.maximumFramesPerSecond) Hz")
+            print("Low Power Mode:      \(ProcessInfo.processInfo.isLowPowerModeEnabled)")
+            print("System Uptime:       \(Int(ProcessInfo.processInfo.systemUptime))s")
+            print("OS Version:          \(versionString)")
+            print("Thermal State:       \(thermalState)")
+            print("Processor Cores:     \(Int(ProcessInfo.processInfo.processorCount))")
+            print("Device RAM:          \(round(100 * Double(ProcessInfo.processInfo.physicalMemory) * pow(10, -9)) / 100) GB")
+            print("Architecture:        \(deviceArchitecture)")
+            print("Model:               \(modelIdentifier)")
+        }
     }
     
     var modelIdentifier: String {
