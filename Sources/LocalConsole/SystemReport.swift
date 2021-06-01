@@ -80,4 +80,29 @@ class SystemReport {
         sysctlbyname("kern.osrelease", &string, &size, nil, 0)
         return String(cString: string)
     }
+    
+    var compileDate: String {
+        var size = 0
+        sysctlbyname("kern.version", nil, &size, nil, 0)
+        
+        var string = [CChar](repeating: 0,  count: Int(size))
+        sysctlbyname("kern.version", &string, &size, nil, 0)
+        let fullString = String(cString: string) /// Ex: Darwin Kernel Version 20.6.0: Mon May 10 03:15:29 PDT 2021; root:xnu-7195.140.13.0.1~20/RELEASE_ARM64_T8101
+        
+        let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.date.rawValue)
+        if let matches = detector?.matches(in: fullString, options: [], range: NSRange(location: 0, length: fullString.utf16.count)) {
+            for match in matches {
+                
+                if let date = match.date {
+                    
+                    let dateformatter = DateFormatter()
+                    dateformatter.dateStyle = .medium
+                    
+                    return dateformatter.string(from: date)
+                }
+            }
+        }
+        
+        return "Unknown"
+    }
 }
