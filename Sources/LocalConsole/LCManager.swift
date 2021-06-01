@@ -8,7 +8,6 @@
 //#if canImport(UIKit)
 
 import UIKit
-import MachO
 
 var GLOBAL_DEBUG_BORDERS = false
 var GLOBAL_BORDER_TRACKERS: [BorderManager] = []
@@ -309,50 +308,24 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     
     func systemReport() {
         DispatchQueue.main.async { [self] in
-            print("Screen Scale:        \(UIScreen.main.scale)\n")
-            print("Screen Size:         \(UIScreen.main.bounds.size)")
-            print("Screen Radius:       \(UIScreen.main.value(forKey: "_displayCornerRadius") as! CGFloat)")
-            print("Max Frame Rate:      \(UIScreen.main.maximumFramesPerSecond) Hz")
-            print("Low Power Mode:      \(ProcessInfo.processInfo.isLowPowerModeEnabled)")
-            print("System Uptime:       \(Int(ProcessInfo.processInfo.systemUptime))s")
-            print("OS Version:          \(versionString)")
-            print("Thermal State:       \(thermalState)")
-            print("Processor Cores:     \(Int(ProcessInfo.processInfo.processorCount))")
-            print("Device RAM:          \(round(100 * Double(ProcessInfo.processInfo.physicalMemory) * pow(10, -9)) / 100) GB")
-            print("Architecture:        \(deviceArchitecture)")
-            print("Model:               \(modelIdentifier)")
+            print("Screen Scale:       \(UIScreen.main.scale)\n")
+            print("Screen Size:        \(UIScreen.main.bounds.size)")
+            print("Screen Radius:      \(UIScreen.main.value(forKey: "_displayCornerRadius") as! CGFloat)")
+            print("Max Frame Rate:     \(UIScreen.main.maximumFramesPerSecond) Hz")
+            print("Low Power Mode:     \(ProcessInfo.processInfo.isLowPowerModeEnabled)")
+            print("System Uptime:      \(Int(ProcessInfo.processInfo.systemUptime))s")
+            print("Thermal State:      \(SystemReport.shared.thermalState)")
+            print("Processor Cores:    \(Int(ProcessInfo.processInfo.processorCount))")
+            print("Memory:             \(round(100 * Double(ProcessInfo.processInfo.physicalMemory) * pow(10, -9)) / 100) GB")
+            print("Firmware:           \(SystemReport.shared.gestaltFirmwareVersion)")
+            print("Kernel Version:     \(SystemReport.shared.kernel) \(SystemReport.shared.kernelVersion)")
+            print("System Version:     \(SystemReport.shared.versionString)")
+            print("Architecture:       \(SystemReport.shared.gestaltArchitecture)")
+            print("Model Identifier:   \(SystemReport.shared.gestaltModelIdentifier)")
+            print("Marketing Name:     \(SystemReport.shared.gestaltMarketingName)")
         }
     }
     
-    var modelIdentifier: String {
-        if let simulatorModelIdentifier = ProcessInfo().environment["SIMULATOR_MODEL_IDENTIFIER"] { return simulatorModelIdentifier }
-        var sysinfo = utsname()
-        uname(&sysinfo) // ignore return value
-        return String(bytes: Data(bytes: &sysinfo.machine, count: Int(_SYS_NAMELEN)), encoding: .ascii)!.trimmingCharacters(in: .controlCharacters)
-    }
-    
-    var deviceArchitecture: String {
-        let info = NXGetLocalArchInfo()
-        return String(utf8String: (info?.pointee.description)!) ?? "Unknown"
-    }
-    
-    var versionString: String {
-        ProcessInfo.processInfo.operatingSystemVersionString
-            .replacingOccurrences(of: "Build ", with: "")
-            .replacingOccurrences(of: "Version ", with: "")
-    }
-    
-    var thermalState: String {
-        let state = ProcessInfo.processInfo.thermalState
-        
-        switch state {
-        case .nominal: return "Nominal"
-        case .fair : return "Fair"
-        case .serious : return "Serious"
-        case .critical : return "Critical"
-        default: return "Unknown"
-        }
-    }
     
     @objc func toggleLock() {
         scrollLocked.toggle()
