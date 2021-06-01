@@ -5,8 +5,6 @@
 //  Copyright © 2021 Duraid Abdul. All rights reserved.
 //
 
-#if canImport(UIKit)
-
 import UIKit
 
 /// This class handles enabling and disabling debug borders on a specified view.
@@ -64,5 +62,3 @@ class BorderManager {
         }
     }
 }
-
-#endif

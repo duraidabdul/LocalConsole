@@ -5,8 +5,6 @@
 //  Copyright © 2021 Duraid Abdul. All rights reserved.
 //
 
-#if canImport(UIKit)
-
 import UIKit
 
 extension UIScreen {
@@ -59,5 +57,3 @@ extension UIView {
         frame.origin.y = (round(frame.origin.y * UIScreen.main.scale)) / UIScreen.main.scale
     }
 }
-
-#endif

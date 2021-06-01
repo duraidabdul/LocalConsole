@@ -5,9 +5,10 @@
 //  Copyright © 2021 Duraid Abdul. All rights reserved.
 //
 
-#if canImport(UIKit)
+//#if canImport(UIKit)
 
 import UIKit
+import MachO
 
 var GLOBAL_DEBUG_BORDERS = false
 var GLOBAL_BORDER_TRACKERS: [BorderManager] = []
@@ -306,6 +307,52 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         }
     }
     
+    func systemReport() {
+        print("Screen Scale:        \(UIScreen.main.scale)\n")
+        print("Screen Size:         \(UIScreen.main.bounds.size)")
+        print("Screen Radius:       \(UIScreen.main.value(forKey: "_displayCornerRadius") as! CGFloat)")
+        print("Max Frame Rate:      \(UIScreen.main.maximumFramesPerSecond) Hz")
+        print("Low Power Mode:      \(ProcessInfo.processInfo.isLowPowerModeEnabled)")
+        print("System Uptime:       \(Int(ProcessInfo.processInfo.systemUptime))s")
+        print("OS Version:          \(versionString)")
+        print("Thermal State:       \(thermalState)")
+        print("Processor Cores:     \(Int(ProcessInfo.processInfo.processorCount))")
+        print("Device RAM:          \(round(100 * Double(ProcessInfo.processInfo.physicalMemory) * pow(10, -9)) / 100) GB")
+        print("Architecture:        \(deviceArchitecture)")
+        print("Model:               \(modelIdentifier)")
+        
+    }
+    
+    var modelIdentifier: String {
+        if let simulatorModelIdentifier = ProcessInfo().environment["SIMULATOR_MODEL_IDENTIFIER"] { return simulatorModelIdentifier }
+        var sysinfo = utsname()
+        uname(&sysinfo) // ignore return value
+        return String(bytes: Data(bytes: &sysinfo.machine, count: Int(_SYS_NAMELEN)), encoding: .ascii)!.trimmingCharacters(in: .controlCharacters)
+    }
+    
+    var deviceArchitecture: String {
+        let info = NXGetLocalArchInfo()
+        return String(utf8String: (info?.pointee.description)!) ?? "Unknown"
+    }
+    
+    var versionString: String {
+        ProcessInfo.processInfo.operatingSystemVersionString
+            .replacingOccurrences(of: "Build ", with: "")
+            .replacingOccurrences(of: "Version ", with: "")
+    }
+    
+    var thermalState: String {
+        let state = ProcessInfo.processInfo.thermalState
+        
+        switch state {
+        case .nominal: return "Nominal"
+        case .fair : return "Fair"
+        case .serious : return "Serious"
+        case .critical : return "Critical"
+        default: return "Unknown"
+        }
+    }
+    
     @objc func toggleLock() {
         scrollLocked.toggle()
     }
@@ -372,6 +419,11 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                                     self.menuButton.menu = self.makeMenu()
                                   })
         
+        let systemReport = UIAction(title: "System Report",
+                                  image: UIImage(systemName: "doc.badge.gearshape"), handler: { _ in
+                                    self.systemReport()
+                                  })
+        
         let respring = UIAction(title: "Restart SpringBoard",
                                 image: UIImage(systemName: "apps.iphone"), handler: { _ in
                                     guard let window = UIApplication.shared.windows.first else { return }
@@ -390,7 +442,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                                     }
                                     animator.startAnimation()
                                 })
-        let debugActions = UIMenu(title: "", options: .displayInline, children: [viewFrames, respring])
+        let debugActions = UIMenu(title: "", options: .displayInline, children: [viewFrames, systemReport, respring])
         
         var menuContent: [UIMenuElement] = []
         
@@ -590,4 +642,4 @@ extension UIWindow {
     }
 }
 
-#endif
+//#endif
