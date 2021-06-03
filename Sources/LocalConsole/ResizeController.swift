@@ -408,7 +408,7 @@ class PlatterView: UIView {
     
     lazy var doneButton: UIButton = {
         let button = UIButton(type: .custom)
-        button.backgroundColor = .systemBlue.resolvedColor(with: UITraitCollection(userInterfaceStyle: .dark))
+        button.backgroundColor = UIColor.systemBlue.resolvedColor(with: UITraitCollection(userInterfaceStyle: .dark))
         button.setTitle("Done", for: .normal)
         button.setTitleColor(.white, for: .normal)
         button.titleLabel?.font = .systemFont(ofSize: 17, weight: .medium)
