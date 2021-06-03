@@ -74,14 +74,14 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                     CGPoint(x: UIScreen.portraitSize.width - consoleSize.width / 2 - 12,
                             y: (UIScreen.hasRoundedCorners ? 44 : 16) + consoleSize.height / 2 + 12),
                     CGPoint(x: consoleSize.width / 2 + 12,
-                            y: UIScreen.portraitSize.height - consoleSize.height / 2 - (consoleWindow?.safeAreaInsets.bottom ?? 0) - 12),
+                            y: UIScreen.portraitSize.height - consoleSize.height / 2 - (keyboardHeight ?? consoleWindow?.safeAreaInsets.bottom ?? 0) - 12),
                     CGPoint(x: UIScreen.portraitSize.width - consoleSize.width / 2 - 12,
-                            y: UIScreen.portraitSize.height - consoleSize.height / 2 - (consoleWindow?.safeAreaInsets.bottom ?? 0) - 12)]
+                            y: UIScreen.portraitSize.height - consoleSize.height / 2 - (keyboardHeight ?? consoleWindow?.safeAreaInsets.bottom ?? 0) - 12)]
         } else {
             return [CGPoint(x: UIScreen.portraitSize.width / 2,
                             y: (UIScreen.hasRoundedCorners ? 44 : 16) + consoleSize.height / 2 + 12),
                     CGPoint(x: UIScreen.portraitSize.width / 2,
-                            y: UIScreen.portraitSize.height - consoleSize.height / 2 - (consoleWindow?.safeAreaInsets.bottom ?? 0) - 12)]
+                            y: UIScreen.portraitSize.height - consoleSize.height / 2 - (keyboardHeight ?? consoleWindow?.safeAreaInsets.bottom ?? 0) - 12)]
         }
     }
     
@@ -174,6 +174,9 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         consoleView.addSubview(menuButton)
         
         UIView.swizzleDebugBehaviour
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
     }
     
     /// Adds a LocalConsole window to the app's main scene.
@@ -277,6 +280,32 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     }
     
     // MARK: - Private
+    
+    
+    // MARK: Handle keyboard show/hide.
+    private var keyboardHeight: CGFloat? = nil {
+        didSet {
+            
+            if consoleView.center != possibleEndpoints[0] && consoleView.center != possibleEndpoints[1] {
+                let nearestTargetPosition = nearestTargetTo(consoleView.center, possibleTargets: possibleEndpoints.suffix(2))
+                
+                UIViewPropertyAnimator(duration: 0.55, dampingRatio: 1) {
+                    self.consoleView.center = nearestTargetPosition
+                }.startAnimation()
+            }
+        }
+    }
+    
+    @objc func keyboardWillShow(_ notification: Notification) {
+        if let keyboardFrame: NSValue = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue {
+            let keyboardRectangle = keyboardFrame.cgRectValue
+            self.keyboardHeight = keyboardRectangle.height
+        }
+    }
+    
+    @objc func keyboardWillHide() {
+        keyboardHeight = nil
+    }
     
     private var debugBordersEnabled = false {
         didSet {
