@@ -4,7 +4,7 @@ Welcome to LocalConsole! This Swift Package makes on-device debugging easy with 
 
 <div>
 <!--   <img src="https://github.com/duraidabdul/LocalConsole/blob/main/Additional%20Files/Demo_Pan.gif?raw=true" width="320"> -->
-  <img src="https://github.com/duraidabdul/LocalConsole/blob/main/Additional%20Files/Demo_Test.gif?raw=true" width="320">
+  <img src="https://github.com/duraidabdul/LocalConsole/blob/main/Additional%20Files/Demo_test2.gif?raw=true" width="320">
   <img src="https://github.com/duraidabdul/LocalConsole/blob/main/Additional%20Files/Demo_Resize.gif?raw=true" width="320">
 </div>
 
