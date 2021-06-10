@@ -8,6 +8,7 @@
 //#if canImport(UIKit)
 
 import UIKit
+import SwiftUI
 
 var GLOBAL_DEBUG_BORDERS = false
 var GLOBAL_BORDER_TRACKERS: [BorderManager] = []
@@ -26,17 +27,35 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         }
     }
     
-    let defaultConsoleSize = CGSize(width: 212, height: 124)
+    let defaultConsoleSize = CGSize(width: 228, height: 142)
     
     /// The fixed size of the console view.
     lazy var consoleSize = defaultConsoleSize {
         didSet {
             consoleView.frame.size = consoleSize
+            
+            // Update text view width.
             if consoleView.frame.size.width > ResizeController.kMaxConsoleWidth {
-                consoleTextView.frame.size.width = ResizeController.kMaxConsoleWidth
+                consoleTextView.frame.size.width = ResizeController.kMaxConsoleWidth - 4
+            } else if consoleView.frame.size.width < ResizeController.kMinConsoleWidth {
+                consoleTextView.frame.size.width = ResizeController.kMinConsoleWidth - 4
             } else {
-                consoleTextView.frame.size.width = consoleSize.width
+                consoleTextView.frame.size.width = consoleSize.width - 4
             }
+            
+            // Update text view height.
+            if consoleView.frame.size.height > ResizeController.kMaxConsoleHeight {
+                consoleTextView.frame.size.height = ResizeController.kMaxConsoleHeight - 4
+                + (consoleView.frame.size.height - ResizeController.kMaxConsoleHeight) * 2 / 3
+            } else if consoleView.frame.size.height < ResizeController.kMinConsoleHeight {
+                consoleTextView.frame.size.height = ResizeController.kMinConsoleHeight - 4
+                + (consoleView.frame.size.height - ResizeController.kMinConsoleHeight) * 2 / 3
+            } else {
+                consoleTextView.frame.size.height = consoleSize.height - 4
+            }
+            
+            consoleTextView.contentOffset.y = consoleTextView.contentSize.height - consoleTextView.bounds.size.height
+            
             // TODO: Snap to nearest position.
             
             UserDefaults.standard.set(consoleSize.width, forKey: "LocalConsole_Width")
@@ -52,7 +71,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     lazy var consoleView = viewController.view!
     
     /// Text view that displays printed items.
-    let consoleTextView = UITextView()
+    let consoleTextView = InvertedTextView()
     
     /// Button that reveals menu.
     lazy var menuButton = UIButton()
@@ -103,7 +122,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         consoleView.center = possibleEndpoints.first!
         consoleView.alpha = 0
         
-        consoleView.layer.cornerRadius = 20
+        consoleView.layer.cornerRadius = 22
         consoleView.layer.cornerCurve = .continuous
         
         let borderView = UIView()
@@ -118,16 +137,18 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         consoleView.addSubview(borderView)
         
         // Configure text view.
-        consoleTextView.frame = CGRect(x: 0, y: 2, width: consoleSize.width, height: consoleSize.height - 4)
+        consoleTextView.frame = CGRect(x: 2, y: 2, width: consoleSize.width - 4, height: consoleSize.height - 4)
         consoleTextView.isEditable = false
         consoleTextView.backgroundColor = .clear
-        consoleTextView.textContainerInset = UIEdgeInsets(top: 8, left: 10, bottom: 8, right: 10)
+        consoleTextView.textContainerInset = UIEdgeInsets(top: 10, left: 8, bottom: 10, right: 8)
         
         consoleTextView.isSelectable = false
         consoleTextView.showsVerticalScrollIndicator = false
         consoleTextView.contentInsetAdjustmentBehavior = .never
-        consoleTextView.autoresizingMask = [.flexibleHeight]
         consoleView.addSubview(consoleTextView)
+        
+        consoleTextView.layer.cornerRadius = consoleView.layer.cornerRadius - 2
+        consoleTextView.layer.cornerCurve = .continuous
         
         // Configure gesture recognizers.
         panRecognizer.maximumNumberOfTouches = 1
@@ -143,7 +164,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         consoleView.addGestureRecognizer(longPressRecognizer)
         
         // Prepare menu button.
-        let diameter = CGFloat(26)
+        let diameter = CGFloat(28)
         
         // This tuned button frame is used to adjust where the menu appears.
         menuButton = UIButton(frame: CGRect(x: consoleView.bounds.width - 44,
@@ -163,7 +184,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         circle.isUserInteractionEnabled = false
         menuButton.addSubview(circle)
         
-        let ellipsisImage = UIImageView(image: UIImage(systemName: "ellipsis", withConfiguration: UIImage.SymbolConfiguration(pointSize: 16)))
+        let ellipsisImage = UIImageView(image: UIImage(systemName: "ellipsis", withConfiguration: UIImage.SymbolConfiguration(pointSize: 17)))
         ellipsisImage.frame.size = circle.bounds.size
         ellipsisImage.contentMode = .center
         circle.addSubview(ellipsisImage)
@@ -238,25 +259,46 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 UIViewPropertyAnimator(duration: 0.5, dampingRatio: 0.6) { [self] in
                     consoleView.transform = .init(scaleX: 1, y: 1)
                 }.startAnimation()
-                UIViewPropertyAnimator(duration: 0.3, dampingRatio: 1) { [self] in
+                UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
                     consoleView.alpha = 1
                 }.startAnimation()
+                
+                let animation = CABasicAnimation(keyPath: "shadowOpacity")
+                animation.fromValue = 0
+                animation.toValue = 0.5
+                animation.duration = 0.6
+                consoleView.layer.add(animation, forKey: animation.keyPath)
+                consoleView.layer.shadowOpacity = 0.5
+                
             } else {
-                UIViewPropertyAnimator(duration: 0.25, dampingRatio: 1) { [self] in
+                UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
                     consoleView.transform = .init(scaleX: 0.9, y: 0.9)
+                }.startAnimation()
+                
+                UIViewPropertyAnimator(duration: 0.3, dampingRatio: 1) { [self] in
                     consoleView.alpha = 0
                 }.startAnimation()
             }
         }
     }
     
+    private var _hasRelayedOffsetChange = false
+    
     /// Print items to the console view.
     public func print(_ items: Any) {
+        
+        if consoleTextView.contentOffset.y > consoleTextView.contentSize.height - 20 - consoleTextView.bounds.size.height ||
+            _hasRelayedOffsetChange == false {
+            consoleTextView.pendingOffsetChange = true
+            
+            _hasRelayedOffsetChange = true
+        }
+        
         let string: String = {
             if consoleTextView.text == "" {
                 return "\(items)"
             } else {
-                return "\(items)\n" + consoleTextView.text
+                return consoleTextView.text + "\n\(items)"
             }
         }()
         
@@ -337,49 +379,46 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     
     func systemReport() {
         DispatchQueue.main.async { [self] in
-            print("Screen Scale:       \(UIScreen.main.scale)\n")
-            print("Screen Radius:      \(UIScreen.main.value(forKey: "_displayCornerRadius") as! CGFloat)")
-            print("Screen Size:        \(UIScreen.main.bounds.size)")
-            print("Max Frame Rate:     \(UIScreen.main.maximumFramesPerSecond) Hz")
-            print("Low Power Mode:     \(ProcessInfo.processInfo.isLowPowerModeEnabled)")
-            print("System Uptime:      \(Int(ProcessInfo.processInfo.systemUptime))s")
-            print("Thermal State:      \(SystemReport.shared.thermalState)")
-            print("Processor Cores:    \(Int(ProcessInfo.processInfo.processorCount))")
-            print("Memory:             \(round(100 * Double(ProcessInfo.processInfo.physicalMemory) * pow(10, -9)) / 100) GB")
-            print("OS Compile Date:    \(SystemReport.shared.compileDate)")
-            print("System Version:     \(SystemReport.shared.versionString)")
-            print("Kernel Version:     \(SystemReport.shared.kernel) \(SystemReport.shared.kernelVersion)")
-            print("Firmware:           \(SystemReport.shared.gestaltFirmwareVersion)")
-            print("Architecture:       \(SystemReport.shared.gestaltArchitecture)")
-            print("Model Identifier:   \(SystemReport.shared.gestaltModelIdentifier)")
-            print("Marketing Name:     \(SystemReport.shared.gestaltMarketingName)")
+            
+            print(
+                  """
+                  \n
+                  Model Name:         \(SystemReport.shared.gestaltMarketingName)
+                  Model Identifier:   \(SystemReport.shared.gestaltModelIdentifier)
+                  Architecture:       \(SystemReport.shared.gestaltArchitecture)
+                  Firmware:           \(SystemReport.shared.gestaltFirmwareVersion)
+                  Kernel Version:     \(SystemReport.shared.kernel) \(SystemReport.shared.kernelVersion)
+                  System Version:     \(SystemReport.shared.versionString)
+                  OS Compile Date:    \(SystemReport.shared.compileDate)
+                  Memory:             \(round(100 * Double(ProcessInfo.processInfo.physicalMemory) * pow(10, -9)) / 100) GB
+                  Processor Cores:    \(Int(ProcessInfo.processInfo.processorCount))
+                  Thermal State:      \(SystemReport.shared.thermalState)
+                  System Uptime:      \(Int(ProcessInfo.processInfo.systemUptime))s
+                  Low Power Mode:     \(ProcessInfo.processInfo.isLowPowerModeEnabled)
+                  """
+            )
+            
         }
     }
     
+    func displayReport() {
+        DispatchQueue.main.async { [self] in
+            
+            print(
+                  """
+                  \n
+                  Screen Size:            \(UIScreen.main.bounds.size)
+                  Screen Corner Radius:   \(UIScreen.main.value(forKey: "_displayCornerRadius") as! CGFloat)
+                  Screen Scale:           \(UIScreen.main.scale)
+                  Max Frame Rate:         \(UIScreen.main.maximumFramesPerSecond) Hz
+                  Brightness:             \(UIScreen.main.brightness)
+                  """
+            )
+        }
+    }
     
     @objc func toggleLock() {
         scrollLocked.toggle()
-    }
-    
-    func toggleVisibility() {
-        if isVisible {
-            UIViewPropertyAnimator(duration: 0.25, dampingRatio: 1) { [self] in
-                consoleView.transform = .init(scaleX: 0.9, y: 0.9)
-                consoleView.alpha = 0
-            }.startAnimation()
-            
-            isVisible = false
-        } else {
-            UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
-                consoleView.transform = .init(scaleX: 1, y: 1)
-                consoleView.alpha = 1
-            }.startAnimation()
-            
-            isVisible = true
-        }
-        
-        // Renders color properly (for dark appearance).
-        consoleView.backgroundColor = .black
     }
     
     func setAttributedText(_ string: String) {
@@ -417,15 +456,47 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         
         let consoleActions = UIMenu(title: "", options: .displayInline, children: [clear, resize])
         
+        var frameSymbol = "rectangle.3.offgrid"
+        if #available(iOS 15, *) {
+            frameSymbol = "square.inset.filled"
+        }
+        
         let viewFrames = UIAction(title: debugBordersEnabled ? "Hide View Frames" : "Show View Frames",
-                                  image: UIImage(systemName: "rectangle.3.offgrid"), handler: { _ in
+                                  image: UIImage(systemName: frameSymbol), handler: { _ in
                                     self.debugBordersEnabled.toggle()
                                     self.menuButton.menu = self.makeMenu()
                                   })
         
         let systemReport = UIAction(title: "System Report",
-                                  image: UIImage(systemName: "doc.badge.gearshape"), handler: { _ in
+                                  image: UIImage(systemName: "cpu"), handler: { _ in
                                     self.systemReport()
+                                  })
+        
+        // Show the right glyph for the current device being used.
+        let deviceSymbol: String = {
+            
+            let hasHomeButton = UIScreen.main.value(forKey: "_displayCornerRadius") as! CGFloat == 0
+            
+            if UIDevice.current.userInterfaceIdiom == .pad {
+                if hasHomeButton {
+                    return "ipad.homebutton"
+                } else {
+                    return "ipad"
+                }
+            } else if UIDevice.current.userInterfaceIdiom == .phone {
+                if hasHomeButton {
+                    return "iphone.homebutton"
+                } else {
+                    return "iphone"
+                }
+            } else {
+                return "rectangle"
+            }
+        }()
+        
+        let displayReport = UIAction(title: "Display Report",
+                                  image: UIImage(systemName: deviceSymbol), handler: { _ in
+                                    self.displayReport()
                                   })
         
         let respring = UIAction(title: "Restart SpringBoard",
@@ -446,7 +517,9 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                                     }
                                     animator.startAnimation()
                                 })
-        let debugActions = UIMenu(title: "", options: .displayInline, children: [viewFrames, systemReport, respring])
+        let debugActions = UIMenu(title: "", options: .displayInline,
+                                  children: [UIMenu(title: "Debug", image: UIImage(systemName: "ant"),
+                                                    children: [viewFrames, systemReport, displayReport, respring])])
         
         var menuContent: [UIMenuElement] = []
         
@@ -647,3 +720,33 @@ extension UIWindow {
 }
 
 //#endif
+
+class InvertedTextView: UITextView {
+    
+    var pendingOffsetChange = false
+    
+    // Thanks to WWDC21 Lab!
+    override func layoutSubviews() {
+        super.layoutSubviews()
+
+        if panGestureRecognizer.numberOfTouches == 0 && pendingOffsetChange {
+            contentOffset.y = contentSize.height - bounds.size.height
+        } else {
+            pendingOffsetChange = false
+        }
+    }
+    
+    var cancelNextContentSizeDidSet = false
+    
+    override var contentSize: CGSize {
+        didSet {
+            cancelNextContentSizeDidSet = true
+            
+            if contentSize.height < bounds.size.height {
+                contentInset.top = bounds.size.height - contentSize.height
+            } else {
+                contentInset.top = 0
+            }
+        }
+    }
+}

@@ -116,6 +116,14 @@ class ResizeController {
             
             if isActive {
                 
+                UIViewPropertyAnimator(duration: 0.75, dampingRatio: 1) {
+                    
+                    let textView = LCManager.shared.consoleTextView
+                    
+                    textView.contentOffset.y = textView.contentSize.height - textView.bounds.size.height
+                }.startAnimation()
+                
+                
                 if LCManager.shared.consoleView.traitCollection.userInterfaceStyle == .light {
                     LCManager.shared.consoleView.layer.shadowOpacity = 0.25
                 }
@@ -189,12 +197,15 @@ class ResizeController {
     
     var initialHeight = CGFloat.zero
     
+    static let kMinConsoleHeight: CGFloat = 108
+    static let kMaxConsoleHeight: CGFloat = 346
+    
     @objc func verticalPanner(recognizer: UIPanGestureRecognizer) {
         
         let translation = recognizer.translation(in: bottomGrabber.superview)
         
-        let maxHeight: CGFloat = 346
-        let minHeight: CGFloat = 108
+        let minHeight = Self.kMinConsoleHeight
+        let maxHeight = Self.kMaxConsoleHeight
         
         switch recognizer.state {
         case .began:
@@ -252,14 +263,15 @@ class ResizeController {
     
     var initialWidth = CGFloat.zero
     
+    static let kMinConsoleWidth: CGFloat = 112
     static let kMaxConsoleWidth: CGFloat = UIScreen.portraitSize.width - 56
     
     @objc func horizontalPanner(recognizer: UIPanGestureRecognizer) {
         
         let translation = recognizer.translation(in: bottomGrabber.superview)
         
-        let maxWidth: CGFloat = Self.kMaxConsoleWidth
-        let minWidth: CGFloat = 112
+        let minWidth = Self.kMinConsoleWidth
+        let maxWidth = Self.kMaxConsoleWidth
         
         switch recognizer.state {
         case .began:
@@ -377,6 +389,7 @@ class PlatterView: UIView {
         
         let subtitleLabel = UILabel()
         subtitleLabel.text = "Use the grabbers to resize the console."
+        subtitleLabel.font = .systemFont(ofSize: 17, weight: .medium)
         subtitleLabel.sizeToFit()
         subtitleLabel.alpha = 0.5
         subtitleLabel.center.x = bounds.width / 2
@@ -455,7 +468,7 @@ class PlatterView: UIView {
             
             // Resolves a text view frame animation bug that occurs when *decreasing* text view width.
             if LCManager.shared.consoleSize.width > LCManager.shared.defaultConsoleSize.width {
-                LCManager.shared.consoleTextView.frame.size.width = LCManager.shared.defaultConsoleSize.width
+                LCManager.shared.consoleTextView.frame.size.width = LCManager.shared.defaultConsoleSize.width - 4
             }
             
             UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) {
