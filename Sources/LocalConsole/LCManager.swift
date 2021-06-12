@@ -10,7 +10,6 @@
 import UIKit
 import SwiftUI
 
-var GLOBAL_DEBUG_BORDERS = false
 var GLOBAL_BORDER_TRACKERS: [BorderManager] = []
 
 public class LCManager: NSObject, UIGestureRecognizerDelegate {
@@ -194,8 +193,6 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         menuButton.showsMenuAsPrimaryAction = true
         consoleView.addSubview(menuButton)
         
-        UIView.swizzleDebugBehaviour
-        
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
     }
@@ -351,7 +348,9 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     
     private var debugBordersEnabled = false {
         didSet {
-            GLOBAL_DEBUG_BORDERS = debugBordersEnabled
+            
+            UIView.swizzleDebugBehaviour_UNTRACKABLE_TOGGLE()
+            
             guard debugBordersEnabled else {
                 GLOBAL_BORDER_TRACKERS.forEach {
                     $0.deactivate()
@@ -687,20 +686,18 @@ public class UITapStartEndGestureRecognizer: UITapGestureRecognizer {
 // MARK: Fun hacks!
 extension UIView {
     /// Swizzle UIView to use custom frame system when needed.
-    static let swizzleDebugBehaviour: Void = {
+    static func swizzleDebugBehaviour_UNTRACKABLE_TOGGLE() {
         guard let originalMethod = class_getInstanceMethod(UIView.self, #selector(layoutSubviews)),
               let swizzledMethod = class_getInstanceMethod(UIView.self, #selector(swizzled_layoutSubviews)) else { return }
         method_exchangeImplementations(originalMethod, swizzledMethod)
-    }()
+    }
 
     @objc func swizzled_layoutSubviews() {
         swizzled_layoutSubviews()
         
-        if GLOBAL_DEBUG_BORDERS {
-            let tracker = BorderManager(view: self)
-            GLOBAL_BORDER_TRACKERS.append(tracker)
-            tracker.activate()
-        }
+        let tracker = BorderManager(view: self)
+        GLOBAL_BORDER_TRACKERS.append(tracker)
+        tracker.activate()
     }
 }
 
