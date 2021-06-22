@@ -284,25 +284,40 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     /// Print items to the console view.
     public func print(_ items: Any) {
         
-        if consoleTextView.contentOffset.y > consoleTextView.contentSize.height - 20 - consoleTextView.bounds.size.height ||
-            _hasRelayedOffsetChange == false {
-            consoleTextView.pendingOffsetChange = true
+        func performActions() {
+            if consoleTextView.contentOffset.y > consoleTextView.contentSize.height - 20 - consoleTextView.bounds.size.height ||
+                _hasRelayedOffsetChange == false {
+                consoleTextView.pendingOffsetChange = true
+                
+                _hasRelayedOffsetChange = true
+            }
             
-            _hasRelayedOffsetChange = true
+            let needsMenuUpdate = consoleTextView.text == ""
+            
+            let string: String = {
+                if consoleTextView.text == "" {
+                    return "\(items)"
+                } else {
+                    return consoleTextView.text + "\n\(items)"
+                }
+            }()
+            
+            setAttributedText(string)
+            
+            if needsMenuUpdate {
+                // Update the context menu to show the clipboard/clear actions.
+                menuButton.menu = makeMenu()
+            }
         }
         
-        let string: String = {
-            if consoleTextView.text == "" {
-                return "\(items)"
-            } else {
-                return consoleTextView.text + "\n\(items)"
+        // Ensure we are performing UI updates on the main thread.
+        DispatchQueue.main.async {
+            
+            // Ensure the console doesn't get caught into any external animation blocks.
+            UIView.performWithoutAnimation {
+                performActions()
             }
-        }()
-        
-        setAttributedText(string)
-        
-        // Update the context menu to show the clipboard/clear actions.
-        menuButton.menu = makeMenu()
+        }
     }
     
     /// Clear text in the console view.
