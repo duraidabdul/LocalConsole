@@ -26,6 +26,25 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         }
     }
     
+    var isConsoleConfigured = false
+    
+    /// A high performance text tracker that only updates the view's text if the view is visible. This allows the app to run print to the console with virtually no performance implications when the console isn't visible.
+    var currentText: String = "" {
+        didSet {
+            if isVisible {
+                
+                // Ensure we are performing UI updates on the main thread.
+                DispatchQueue.main.async {
+                    
+                    // Ensure the console doesn't get caught into any external animation blocks.
+                    UIView.performWithoutAnimation {
+                        self.commitTextChanges(requestMenuUpdate: oldValue == "" || (oldValue != "" && self.currentText == ""))
+                    }
+                }
+            }
+        }
+    }
+    
     let defaultConsoleSize = CGSize(width: 228, height: 142)
     
     /// The fixed size of the console view.
@@ -105,11 +124,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     
     lazy var initialViewLocation: CGPoint = .zero
     
-    override init() {
-        super.init()
-        
-        configureWindow()
-        
+    func configureConsole() {
         consoleSize = CGSize(width: UserDefaults.standard.object(forKey: "LocalConsole_Width") as? CGFloat ?? consoleSize.width,
                              height: UserDefaults.standard.object(forKey: "LocalConsole_Height") as? CGFloat ?? consoleSize.height)
         
@@ -247,11 +262,19 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     // MARK: - Public
     
     public var isVisible = false {
-        
         didSet {
             guard oldValue != isVisible else { return }
             
             if isVisible {
+                
+                if !isConsoleConfigured {
+                    configureWindow()
+                    configureConsole()
+                    isConsoleConfigured = true
+                }
+                
+                commitTextChanges(requestMenuUpdate: true)
+                
                 consoleView.transform = .init(scaleX: 0.9, y: 0.9)
                 UIViewPropertyAnimator(duration: 0.5, dampingRatio: 0.6) { [self] in
                     consoleView.transform = .init(scaleX: 1, y: 1)
@@ -283,49 +306,16 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     
     /// Print items to the console view.
     public func print(_ items: Any) {
-        
-        func performActions() {
-            if consoleTextView.contentOffset.y > consoleTextView.contentSize.height - 20 - consoleTextView.bounds.size.height ||
-                _hasRelayedOffsetChange == false {
-                consoleTextView.pendingOffsetChange = true
-                
-                _hasRelayedOffsetChange = true
-            }
-            
-            let needsMenuUpdate = consoleTextView.text == ""
-            
-            let string: String = {
-                if consoleTextView.text == "" {
-                    return "\(items)"
-                } else {
-                    return consoleTextView.text + "\n\(items)"
-                }
-            }()
-            
-            setAttributedText(string)
-            
-            if needsMenuUpdate {
-                // Update the context menu to show the clipboard/clear actions.
-                menuButton.menu = makeMenu()
-            }
-        }
-        
-        // Ensure we are performing UI updates on the main thread.
-        DispatchQueue.main.async {
-            
-            // Ensure the console doesn't get caught into any external animation blocks.
-            UIView.performWithoutAnimation {
-                performActions()
-            }
+        if currentText == "" {
+            currentText = "\(items)"
+        } else {
+            currentText = currentText + "\n\(items)"
         }
     }
     
     /// Clear text in the console view.
     public func clear() {
-        consoleTextView.text = ""
-        
-        // Update the context menu to hide the clipboard/clear actions.
-        menuButton.menu = makeMenu()
+        currentText = ""
     }
     
     /// Copy the console view text to the device's clipboard.
@@ -425,7 +415,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                   Screen Corner Radius:   \(UIScreen.main.value(forKey: "_displayCornerRadius") as! CGFloat)
                   Screen Scale:           \(UIScreen.main.scale)
                   Max Frame Rate:         \(UIScreen.main.maximumFramesPerSecond) Hz
-                  Brightness:             \(UIScreen.main.brightness)
+                  Brightness:             \(String(format: "%.2f", UIScreen.main.brightness))
                   """
             )
         }
@@ -433,6 +423,25 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     
     @objc func toggleLock() {
         scrollLocked.toggle()
+    }
+    
+    func commitTextChanges(requestMenuUpdate menuUpdateRequested: Bool) {
+        
+        if consoleTextView.contentOffset.y > consoleTextView.contentSize.height - 20 - consoleTextView.bounds.size.height ||
+            _hasRelayedOffsetChange == false {
+            consoleTextView.pendingOffsetChange = true
+            
+            _hasRelayedOffsetChange = true
+        }
+        
+        consoleTextView.text = currentText
+        
+        setAttributedText(currentText)
+        
+        if menuUpdateRequested {
+            // Update the context menu to show the clipboard/clear actions.
+            menuButton.menu = makeMenu()
+        }
     }
     
     func setAttributedText(_ string: String) {
