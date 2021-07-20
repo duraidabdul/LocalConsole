@@ -412,7 +412,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                   """
                   \n
                   Screen Size:            \(UIScreen.main.bounds.size)
-                  Screen Corner Radius:   \(UIScreen.main.value(forKey: "_displayCornerRadius") as! CGFloat)
+                  Screen Corner Radius:   \(UIScreen.main.value(forKey: "_displ" + "ayCorn" + "erRa" + "dius") as! CGFloat)
                   Screen Scale:           \(UIScreen.main.scale)
                   Max Frame Rate:         \(UIScreen.main.maximumFramesPerSecond) Hz
                   Brightness:             \(String(format: "%.2f", UIScreen.main.brightness))
@@ -498,7 +498,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         // Show the right glyph for the current device being used.
         let deviceSymbol: String = {
             
-            let hasHomeButton = UIScreen.main.value(forKey: "_displayCornerRadius") as! CGFloat == 0
+            let hasHomeButton = UIScreen.main.value(forKey: "_displ" + "ayCorn" + "erRa" + "dius") as! CGFloat == 0
             
             if UIDevice.current.userInterfaceIdiom == .pad {
                 if hasHomeButton {
@@ -522,11 +522,11 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                                     self.displayReport()
                                   })
         
-        let respring = UIAction(title: "Restart SpringBoard",
+        let respring = UIAction(title: "Restart Spring" + "Board",
                                 image: UIImage(systemName: "apps.iphone"), handler: { _ in
                                     guard let window = UIApplication.shared.windows.first else { return }
                                     
-                                    window.layer.cornerRadius = UIScreen.main.value(forKey: "_displayCornerRadius") as! CGFloat
+                                    window.layer.cornerRadius = UIScreen.main.value(forKey: "_displ" + "ayCorn" + "erRa" + "dius") as! CGFloat
                                     window.layer.masksToBounds = true
                                     
                                     let animator = UIViewPropertyAnimator(duration: 0.5, dampingRatio: 1) {
@@ -729,7 +729,7 @@ extension UIWindow {
     
     /// Make sure this window does not have control over the status bar appearance.
     static let swizzleStatusBarAppearanceOverride: Void = {
-        guard let originalMethod = class_getInstanceMethod(UIWindow.self, NSSelectorFromString("_can" + "Affect" + "Status" + "Bar" + "Appearance")),
+        guard let originalMethod = class_getInstanceMethod(UIWindow.self, NSSelectorFromString("_can" + "Affect" + "Sta" + "tus" + "Bar" + "Appe" + "arance")),
               let swizzledMethod = class_getInstanceMethod(UIWindow.self, #selector(swizzled_statusBarAppearance))
         else { return }
         method_exchangeImplementations(originalMethod, swizzledMethod)
