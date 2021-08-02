@@ -17,7 +17,7 @@ Welcome to LocalConsole! This Swift Package makes on-device debugging easy with 
 ```swift
 import LocalConsole
 
-let localConsoleManager = LCManager.shared
+let consoleManager = LCManager.shared
 ```
 
 ## **Usage**
@@ -25,30 +25,29 @@ Once prepared, the localConsole can be used throughout your project.
 ```swift
 
 // Show the console view.
-localConsoleManager.isVisible = true
+consoleManager.isVisible = true
 
 // Hide the console view.
-localConsoleManager.isVisible = false
+consoleManager.isVisible = false
 ```
 
 ```swift
 // Print items to the console view.
-localConsoleManager.print("Hello, world!")
+consoleManager.print("Hello, world!")
 
 // Clear console text.
-localConsoleManager.clear()
+consoleManager.clear()
 
 // Copy console text.
-localConsoleManager.copy()
+consoleManager.copy()
 ```
 
 ```swift
 // Change the console view font size.
-localConsoleManager.fontSize = 5
+consoleManager.fontSize = 5
 ```
 
 
 ## **To-Do**
-* Support for iOS 13
 * Screen edge console hiding
 * Make console view reactive to landscape/portrait switch
