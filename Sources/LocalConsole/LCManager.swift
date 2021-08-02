@@ -392,22 +392,25 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             if currentText != "" { print("\n") }
             
             dynamicReportTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
-                if currentText.suffix("Low Power Mode:     true".count) == "Low Power Mode:     true"
-                    || currentText.suffix("Low Power Mode:     false".count) == "Low Power Mode:     false" {
-                    
-                    var _currentText = currentText
-                    
-                    let range = NSMakeRange(_currentText.count - 150, 150)
-                    
-                    let regex0 = try! NSRegularExpression(pattern: "Thermal State:      .*", options: NSRegularExpression.Options.caseInsensitive)
-                    _currentText = regex0.stringByReplacingMatches(in: _currentText, options: [], range: range, withTemplate: "Thermal State:      \(SystemReport.shared.thermalState)")
-                    
-                    let regex1 = try! NSRegularExpression(pattern: "System Uptime:      .*", options: NSRegularExpression.Options.caseInsensitive)
-                    _currentText = regex1.stringByReplacingMatches(in: _currentText, options: [], range: range, withTemplate: "System Uptime:      \(ProcessInfo.processInfo.systemUptime.formattedString!)")
-                    
-                    let regex2 = try! NSRegularExpression(pattern: "Low Power Mode:     .*", options: NSRegularExpression.Options.caseInsensitive)
-                    _currentText = regex2.stringByReplacingMatches(in: _currentText, options: [], range: range, withTemplate: "Low Power Mode:     \(ProcessInfo.processInfo.isLowPowerModeEnabled)")
-                    
+                var _currentText = currentText
+                
+                let range: NSRange = {
+                    if _currentText.count <= 2500 {
+                        return NSMakeRange(0, _currentText.count)
+                    }
+                    return NSMakeRange(_currentText.count - 2500, 2500)
+                }()
+                
+                let regex0 = try! NSRegularExpression(pattern: "Thermal State:      .*", options: NSRegularExpression.Options.caseInsensitive)
+                _currentText = regex0.stringByReplacingMatches(in: _currentText, options: [], range: range, withTemplate: "Thermal State:      \(SystemReport.shared.thermalState)")
+                
+                let regex1 = try! NSRegularExpression(pattern: "System Uptime:      .*", options: NSRegularExpression.Options.caseInsensitive)
+                _currentText = regex1.stringByReplacingMatches(in: _currentText, options: [], range: range, withTemplate: "System Uptime:      \(ProcessInfo.processInfo.systemUptime.formattedString!)")
+                
+                let regex2 = try! NSRegularExpression(pattern: "Low Power Mode:     .*", options: NSRegularExpression.Options.caseInsensitive)
+                _currentText = regex2.stringByReplacingMatches(in: _currentText, options: [], range: range, withTemplate: "Low Power Mode:     \(ProcessInfo.processInfo.isLowPowerModeEnabled)")
+                
+                if currentText != _currentText {
                     currentText = _currentText
                 } else {
                     timer.invalidate()
