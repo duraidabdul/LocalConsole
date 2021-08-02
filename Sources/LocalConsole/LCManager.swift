@@ -384,9 +384,35 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     func systemReport() {
         DispatchQueue.main.async { [self] in
             
+            if currentText != "" {
+                print("\n")
+            }
+            
+            Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
+                if currentText.suffix("Low Power Mode:     true".count) == "Low Power Mode:     true"
+                    || currentText.suffix("Low Power Mode:     false".count) == "Low Power Mode:     false" {
+                    
+                    var _currentText = currentText
+                    
+                    let range = NSMakeRange(_currentText.count - 150, 150)
+                    
+                    let regex0 = try! NSRegularExpression(pattern: "Thermal State:      .*", options: NSRegularExpression.Options.caseInsensitive)
+                    _currentText = regex0.stringByReplacingMatches(in: _currentText, options: [], range: range, withTemplate: "Thermal State:      \(SystemReport.shared.thermalState)")
+                    
+                    let regex1 = try! NSRegularExpression(pattern: "System Uptime:      .*", options: NSRegularExpression.Options.caseInsensitive)
+                    _currentText = regex1.stringByReplacingMatches(in: _currentText, options: [], range: range, withTemplate: "System Uptime:      \(ProcessInfo.processInfo.systemUptime.formattedString!)")
+                    
+                    let regex2 = try! NSRegularExpression(pattern: "Low Power Mode:     .*", options: NSRegularExpression.Options.caseInsensitive)
+                    _currentText = regex2.stringByReplacingMatches(in: _currentText, options: [], range: range, withTemplate: "Low Power Mode:     \(ProcessInfo.processInfo.isLowPowerModeEnabled)")
+                    
+                    currentText = _currentText
+                } else {
+                    timer.invalidate()
+                }
+            }
+            
             print(
                   """
-                  \n
                   Model Name:         \(SystemReport.shared.gestaltMarketingName)
                   Model Identifier:   \(SystemReport.shared.gestaltModelIdentifier)
                   Architecture:       \(SystemReport.shared.gestaltArchitecture)
@@ -397,20 +423,20 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                   Memory:             \(round(100 * Double(ProcessInfo.processInfo.physicalMemory) * pow(10, -9)) / 100) GB
                   Processor Cores:    \(Int(ProcessInfo.processInfo.processorCount))
                   Thermal State:      \(SystemReport.shared.thermalState)
-                  System Uptime:      \(Int(ProcessInfo.processInfo.systemUptime))s
+                  System Uptime:      \(ProcessInfo.processInfo.systemUptime.formattedString!)
                   Low Power Mode:     \(ProcessInfo.processInfo.isLowPowerModeEnabled)
                   """
             )
-            
         }
     }
     
     func displayReport() {
         DispatchQueue.main.async { [self] in
             
+            if currentText != "" { print("\n") }
+            
             print(
                   """
-                  \n
                   Screen Size:            \(UIScreen.main.bounds.size)
                   Screen Corner Radius:   \(UIScreen.main.value(forKey: "_displ" + "ayCorn" + "erRa" + "dius") as! CGFloat)
                   Screen Scale:           \(UIScreen.main.scale)
@@ -427,10 +453,10 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     
     func commitTextChanges(requestMenuUpdate menuUpdateRequested: Bool) {
         
-        if consoleTextView.contentOffset.y > consoleTextView.contentSize.height - 20 - consoleTextView.bounds.size.height ||
-            _hasRelayedOffsetChange == false {
-            consoleTextView.pendingOffsetChange = true
+        if consoleTextView.contentOffset.y > consoleTextView.contentSize.height - consoleTextView.bounds.size.height - 20
+            || _hasRelayedOffsetChange == false {
             
+            consoleTextView.pendingOffsetChange = true
             _hasRelayedOffsetChange = true
         }
         
@@ -770,4 +796,16 @@ class InvertedTextView: UITextView {
             }
         }
     }
+}
+
+extension TimeInterval {
+    var formattedString: String? {
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = [.hour, .minute, .second]
+        return formatter.string(from: self)
+    }
+}
+
+fileprivate func _debugPrint(_ items: Any) {
+    print(items)
 }
