@@ -382,14 +382,16 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         }
     }
     
+    var dynamicReportTimer: Timer? {
+        willSet { dynamicReportTimer?.invalidate() }
+    }
+    
     func systemReport() {
         DispatchQueue.main.async { [self] in
             
-            if currentText != "" {
-                print("\n")
-            }
+            if currentText != "" { print("\n") }
             
-            Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
+            dynamicReportTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
                 if currentText.suffix("Low Power Mode:     true".count) == "Low Power Mode:     true"
                     || currentText.suffix("Low Power Mode:     false".count) == "Low Power Mode:     false" {
                     
