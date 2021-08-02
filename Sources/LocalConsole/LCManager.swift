@@ -394,6 +394,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             dynamicReportTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
                 var _currentText = currentText
                 
+                // To optimize performance, only scan the last 2500 characters of text for system report changes.
                 let range: NSRange = {
                     if _currentText.count <= 2500 {
                         return NSMakeRange(0, _currentText.count)
@@ -413,6 +414,8 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 if currentText != _currentText {
                     currentText = _currentText
                 } else {
+                    
+                    // Invalidate the timer if there is no longer anything to update.
                     timer.invalidate()
                 }
             }
