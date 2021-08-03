@@ -125,6 +125,15 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     
     lazy var initialViewLocation: CGPoint = .zero
     
+    func chooseTheme(theme: String = "black") -> (foregroundColor: String, backgroundColor: String) {
+        if theme == "black" {
+                return (foregroundColor: .black, backgroundColor: .white)
+        } else {
+            return (foregroundColor: .white, backgroundColor: .black)
+        }
+    }
+
+    
     func configureConsole() {
         consoleSize = CGSize(width: UserDefaults.standard.object(forKey: "LocalConsole_Width") as? CGFloat ?? consoleSize.width,
                              height: UserDefaults.standard.object(forKey: "LocalConsole_Height") as? CGFloat ?? consoleSize.height)
