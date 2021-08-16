@@ -86,11 +86,11 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     var consoleWindow: ConsoleWindow?
     
     // The console needs a parent view controller in order to display context menus.
-    let viewController = UIViewController()
+    lazy var viewController = UIViewController()
     lazy var consoleView = viewController.view!
     
     /// Text view that displays printed items.
-    let consoleTextView = InvertedTextView()
+    lazy var consoleTextView = InvertedTextView()
     
     /// Button that reveals menu.
     lazy var menuButton = UIButton()
@@ -99,7 +99,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     var scrollLocked = true
     
     /// Feedback generator for the long press action.
-    let feedbackGenerator = UISelectionFeedbackGenerator()
+    lazy var feedbackGenerator = UISelectionFeedbackGenerator()
     
     lazy var panRecognizer = UIPanGestureRecognizer(target: self, action: #selector(consolePiPPanner(recognizer:)))
     lazy var longPressRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(longPressAction(recognizer:)))
@@ -303,8 +303,6 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         }
     }
     
-    private var _hasRelayedOffsetChange = false
-    
     /// Print items to the console view.
     public func print(_ items: Any) {
         if currentText == "" {
@@ -462,14 +460,14 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     
     func commitTextChanges(requestMenuUpdate menuUpdateRequested: Bool) {
         
-        if consoleTextView.contentOffset.y > consoleTextView.contentSize.height - consoleTextView.bounds.size.height - 20
-            || _hasRelayedOffsetChange == false {
+        if consoleTextView.contentOffset.y > consoleTextView.contentSize.height - consoleTextView.bounds.size.height - 20 {
+            
+            // Weird, weird fix that makes the scroll view bottom pinning system work.
+            consoleTextView.isScrollEnabled.toggle()
+            consoleTextView.isScrollEnabled.toggle()
             
             consoleTextView.pendingOffsetChange = true
-            _hasRelayedOffsetChange = true
         }
-        
-        consoleTextView.text = currentText
         
         setAttributedText(currentText)
         
