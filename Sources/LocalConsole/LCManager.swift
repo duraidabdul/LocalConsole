@@ -27,6 +27,24 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         }
     }
     
+    /// Sets the theme of the LocalConsole Widget
+    public var theme: String = "dark" {
+        didSet {
+            guard theme != "dark" || theme != "light" else { theme = "dark"; return }
+        }
+    }
+    
+    /// Choosing the theme color palettes
+    private func chooseTheme(theme: String = "dark") -> (foregroundColor: String, backgroundColor: String) {
+        if theme == "light" {
+                return (foregroundColor: UIColor.black, backgroundColor: UIColor.white)
+        } else {
+            return (foregroundColor: UIColor.white, backgroundColor: UIColor.black)
+        }
+    }
+    
+    private preferredTheme = chooseTheme(theme)
+    
     var isConsoleConfigured = false
     
     /// A high performance text tracker that only updates the view's text if the view is visible. This allows the app to run print to the console with virtually no performance implications when the console isn't visible.
@@ -125,20 +143,11 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     
     lazy var initialViewLocation: CGPoint = .zero
     
-    func chooseTheme(theme: String = "black") -> (foregroundColor: String, backgroundColor: String) {
-        if theme == "black" {
-                return (foregroundColor: .black, backgroundColor: .white)
-        } else {
-            return (foregroundColor: .white, backgroundColor: .black)
-        }
-    }
-
-    
     func configureConsole() {
         consoleSize = CGSize(width: UserDefaults.standard.object(forKey: "LocalConsole_Width") as? CGFloat ?? consoleSize.width,
                              height: UserDefaults.standard.object(forKey: "LocalConsole_Height") as? CGFloat ?? consoleSize.height)
         
-        consoleView.backgroundColor = .black
+        consoleView.backgroundColor = preferredTheme.backgroundColor
         
         consoleView.layer.shadowRadius = 16
         consoleView.layer.shadowOpacity = 0.5
@@ -494,7 +503,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         
         let attributes: [NSAttributedString.Key: Any] = [
             .paragraphStyle: paragraphStyle,
-            .foregroundColor: UIColor.white,
+            .foregroundColor: preferredTheme.foregroundColor,
             .font: UIFont.systemFont(ofSize: fontSize, weight: .semibold, design: .monospaced)
         ]
         
@@ -695,7 +704,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         }.startAnimation()
         
         UIViewPropertyAnimator(duration: 0.75, dampingRatio: 1) { [self] in
-            consoleView.backgroundColor = .black
+            consoleView.backgroundColor = preferredTheme.backgroundColor
         }.startAnimation()
     }
     
@@ -785,7 +794,6 @@ extension UIWindow {
 }
 
 //#endif
-
 class InvertedTextView: UITextView {
     
     var pendingOffsetChange = false
