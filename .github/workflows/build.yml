@@ -14,6 +14,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Build
-      run: swiftc Sources/LocalConsole/LCManager.swift -o output.o -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS14.0.sdk -target arm64-apple-ios14.0
+      run: swiftc Sources/LocalConsole/LCManager.swift -o output.o -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS12.0.sdk -target arm64-apple-ios12.0
     - name: Run tests
       run: swift test -v
