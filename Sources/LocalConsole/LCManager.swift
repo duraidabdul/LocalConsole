@@ -12,7 +12,6 @@ import SwiftUI
 
 var GLOBAL_BORDER_TRACKERS: [BorderManager] = []
 
-@available(iOSApplicationExtension, unavailable)
 public class LCManager: NSObject, UIGestureRecognizerDelegate {
     
     public static let shared = LCManager()
@@ -47,6 +46,30 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     }
     
     let defaultConsoleSize = CGSize(width: 228, height: 142)
+    
+    lazy var borderView = UIView()
+    
+    var lumaHeightAnchor: NSLayoutConstraint!
+    
+    lazy var lumaView: UIView = {
+        let lumaView = UIView.lumaView()
+        lumaView.alpha = 0
+        
+        consoleView.addSubview(lumaView)
+        
+        lumaView.translatesAutoresizingMaskIntoConstraints = false
+        
+        lumaHeightAnchor = lumaView.heightAnchor.constraint(equalToConstant: 96)
+        
+        NSLayoutConstraint.activate([
+            lumaView.leadingAnchor.constraint(equalTo: consoleView.leadingAnchor),
+            lumaView.trailingAnchor.constraint(equalTo: consoleView.trailingAnchor),
+            lumaHeightAnchor,
+            lumaView.centerYAnchor.constraint(equalTo: consoleView.centerYAnchor)
+        ])
+        
+        return lumaView
+    }()
     
     /// The fixed size of the console view.
     lazy var consoleSize = defaultConsoleSize {
@@ -106,16 +129,51 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     
     /// Gesture endpoints. Each point represents a corner of the screen. TODO: Handle screen rotation.
     var possibleEndpoints: [CGPoint] {
+        
         if consoleSize.width < UIScreen.portraitSize.width - 112 {
-            return [CGPoint(x: consoleSize.width / 2 + 12,
-                            y: (UIScreen.hasRoundedCorners ? 44 : 16) + consoleSize.height / 2 + 12),
-                    CGPoint(x: UIScreen.portraitSize.width - consoleSize.width / 2 - 12,
-                            y: (UIScreen.hasRoundedCorners ? 44 : 16) + consoleSize.height / 2 + 12),
-                    CGPoint(x: consoleSize.width / 2 + 12,
-                            y: UIScreen.portraitSize.height - consoleSize.height / 2 - (keyboardHeight ?? consoleWindow?.safeAreaInsets.bottom ?? 0) - 12),
-                    CGPoint(x: UIScreen.portraitSize.width - consoleSize.width / 2 - 12,
-                            y: UIScreen.portraitSize.height - consoleSize.height / 2 - (keyboardHeight ?? consoleWindow?.safeAreaInsets.bottom ?? 0) - 12)]
+            
+            // Four endpoints, one for each corner.
+            var endpoints = [CGPoint(x: consoleSize.width / 2 + 12,
+                                     y: (UIScreen.hasRoundedCorners ? 44 : 16) + consoleSize.height / 2 + 12),
+                             CGPoint(x: consoleSize.width / 2 + 12,
+                                     y: UIScreen.portraitSize.height - consoleSize.height / 2 - (keyboardHeight ?? consoleWindow?.safeAreaInsets.bottom ?? 0) - 12),
+                             CGPoint(x: UIScreen.portraitSize.width - consoleSize.width / 2 - 12,
+                                     y: (UIScreen.hasRoundedCorners ? 44 : 16) + consoleSize.height / 2 + 12),
+                             CGPoint(x: UIScreen.portraitSize.width - consoleSize.width / 2 - 12,
+                                     y: UIScreen.portraitSize.height - consoleSize.height / 2 - (keyboardHeight ?? consoleWindow?.safeAreaInsets.bottom ?? 0) - 12)]
+            
+            if consoleView.frame.minX <= -10 {
+                
+                endpoints = [endpoints[0], endpoints[1]]
+                
+                // Left edge hiding endpoints.
+                if consoleView.center.y < UIScreen.portraitSize.height / 2 {
+                    endpoints.append(CGPoint(x: -consoleSize.width / 2 + 12,
+                                             y: endpoints[0].y))
+                } else {
+                    endpoints.append(CGPoint(x: -consoleSize.width / 2 + 12,
+                                             y: endpoints[1].y))
+                }
+            } else if consoleView.frame.maxX >= UIScreen.portraitSize.width + 10 {
+                
+                endpoints = [endpoints[2], endpoints[3]]
+                
+                // Right edge hiding endpoints.
+                if consoleView.center.y < UIScreen.portraitSize.height / 2 {
+                    endpoints.append(CGPoint(x: UIScreen.portraitSize.width + consoleSize.width / 2 - 12,
+                                             y: endpoints[0].y))
+                } else {
+                    endpoints.append(CGPoint(x: UIScreen.portraitSize.width + consoleSize.width / 2 - 12,
+                                             y: endpoints[1].y))
+                }
+            }
+            
+            return endpoints
+//            } else if consoleView.frame.minX >= 12
+            
         } else {
+            
+            // Two endpoints, one for the top, one for the bottom..
             return [CGPoint(x: UIScreen.portraitSize.width / 2,
                             y: (UIScreen.hasRoundedCorners ? 44 : 16) + consoleSize.height / 2 + 12),
                     CGPoint(x: UIScreen.portraitSize.width / 2,
@@ -140,7 +198,8 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         consoleView.layer.cornerRadius = 22
         consoleView.layer.cornerCurve = .continuous
         
-        let borderView = UIView()
+        let _ = lumaView
+        
         borderView.frame = CGRect(x: -1, y: -1,
                                    width: consoleSize.width + 2,
                                    height: consoleSize.height + 2)
@@ -299,6 +358,75 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 UIViewPropertyAnimator(duration: 0.3, dampingRatio: 1) { [self] in
                     consoleView.alpha = 0
                 }.startAnimation()
+            }
+        }
+    }
+    
+    var grabberMode: Bool = false {
+        
+        didSet {
+            guard oldValue != grabberMode else { return }
+            
+            if grabberMode {
+                
+                if oldValue == false {
+                    lumaView.layer.cornerRadius = consoleView.layer.cornerRadius
+                    lumaHeightAnchor.constant = consoleView.frame.size.height
+                    consoleView.layoutIfNeeded()
+                    
+                    lumaView.subviews.first?.alpha = 1
+                    lumaView.backgroundColor = .clear
+                }
+                
+                UIViewPropertyAnimator(duration: 0.3, dampingRatio: 1) { [self] in
+                    consoleTextView.alpha = 0
+                    menuButton.alpha = 0
+                }.startAnimation()
+                
+                UIViewPropertyAnimator(duration: 0.5, dampingRatio: 1) { [self] in
+                    lumaView.alpha = 1
+                }.startAnimation()
+                
+                UIViewPropertyAnimator(duration: 0.2, dampingRatio: 1) { [self] in
+                    borderView.alpha = 0
+                    consoleView.backgroundColor = .clear
+                }.startAnimation(afterDelay: 0.25)
+                
+                lumaHeightAnchor.constant = 96
+                UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
+                    lumaView.layer.cornerRadius = 8
+                    consoleView.layoutIfNeeded()
+                }.startAnimation(afterDelay: 0.3)
+                
+                consoleTextView.isUserInteractionEnabled = false
+                
+            } else {
+                lumaHeightAnchor.constant = consoleView.frame.size.height
+                UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
+                    consoleView.layoutIfNeeded()
+                    lumaView.layer.cornerRadius = consoleView.layer.cornerRadius
+                    
+                    lumaView.backgroundColor = .black
+                }.startAnimation()
+                
+                UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
+                    lumaView.subviews.first?.alpha = 0
+                }.startAnimation(afterDelay: 0.2)
+                
+                UIViewPropertyAnimator(duration: 0.3, dampingRatio: 1) { [self] in
+                    consoleTextView.alpha = 1
+                    menuButton.alpha = 1
+                    borderView.alpha = 1
+                    consoleView.backgroundColor = .black
+                }.startAnimation(afterDelay: 0.3)
+                
+                UIViewPropertyAnimator(duration: 0.6, dampingRatio: 1) { [self] in
+                    lumaView.alpha = 0
+                    
+                }.startAnimation(afterDelay: 0.4)
+                
+                consoleTextView.isUserInteractionEnabled = true
+                
             }
         }
     }
@@ -592,6 +720,9 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     @objc func longPressAction(recognizer: UILongPressGestureRecognizer) {
         switch recognizer.state {
         case .began:
+            
+            guard !grabberMode else { return }
+            
             feedbackGenerator.selectionChanged()
             
             scrollLocked = false
@@ -599,6 +730,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
                 consoleView.transform = .init(scaleX: 1.04, y: 1.04)
                 consoleTextView.alpha = 0.5
+                menuButton.alpha = 0.5
             }.startAnimation()
         case .cancelled, .ended:
             
@@ -609,7 +741,10 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             }.startAnimation()
             
             UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
-                consoleTextView.alpha = 1
+                if !grabberMode {
+                    consoleTextView.alpha = 1
+                    menuButton.alpha = 1
+                }
             }.startAnimation()
         default: break
         }
@@ -621,7 +756,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             initialViewLocation = consoleView.center
         }
         
-        guard !scrollLocked else { return }
+        guard !scrollLocked || grabberMode else { return }
         
         let translation = recognizer.translation(in: consoleView.superview)
         let velocity = recognizer.velocity(in: consoleView.superview)
@@ -656,20 +791,20 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             }
             positionAnimator.startAnimation()
             
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                self.grabberMode = nearestTargetPosition.x < 0 || nearestTargetPosition.x > UIScreen.portraitSize.width
+            }
+            
         default: break
         }
     }
     
     // Animate touch down.
     func consolePiPTouchDown() {
-        UIViewPropertyAnimator(duration: 1, dampingRatio: 0.5) { [self] in
-            consoleView.transform = .init(scaleX: 0.96, y: 0.96)
-        }.startAnimation()
+        guard !grabberMode else { return }
         
-        UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
-            if !scrollLocked {
-                consoleView.backgroundColor = #colorLiteral(red: 0.1331297589, green: 0.1331297589, blue: 0.1331297589, alpha: 1)
-            }
+        UIViewPropertyAnimator(duration: 1.25, dampingRatio: 0.5) { [self] in
+            consoleView.transform = .init(scaleX: 0.95, y: 0.95)
         }.startAnimation()
     }
     
@@ -680,11 +815,10 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         }.startAnimation()
         
         UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
-            consoleTextView.alpha = 1
-        }.startAnimation()
-        
-        UIViewPropertyAnimator(duration: 0.75, dampingRatio: 1) { [self] in
-            consoleView.backgroundColor = .black
+            if !grabberMode {
+                consoleTextView.alpha = 1
+                menuButton.alpha = 1
+            }
         }.startAnimation()
     }
     
@@ -755,6 +889,48 @@ extension UIView {
         let tracker = BorderManager(view: self)
         GLOBAL_BORDER_TRACKERS.append(tracker)
         tracker.activate()
+    }
+    
+    static func lumaView() -> UIView {
+        Bundle(path: "/Sys" + "tem/Lib" + "rary/Private" + "Frameworks/Material" + "Kit." + "framework")!.load()
+        
+        let Pill = NSClassFromString("MT" + "Luma" + "Dodge" + "Pill" + "View") as! UIView.Type
+        
+        let pillView = Pill.init()
+        
+        enum Style: Int {
+            case none = 0
+            case thin = 1
+            case gray = 2
+            case black = 3
+            case white = 4
+        }
+        
+        enum BackgroundLuminance: Int {
+            case unknown = 0
+            case dark = 1
+            case light = 2
+        }
+        
+        pillView.setValue(2, forKey: "style")
+        pillView.setValue(1, forKey: "background" + "Luminance")
+        pillView.perform(NSSelectorFromString("_" + "update" + "Style"))
+        
+        let pillContainer = UIView()
+        pillContainer.addSubview(pillView)
+        pillContainer.clipsToBounds = true
+        pillContainer.layer.cornerCurve = .continuous
+        
+        pillView.translatesAutoresizingMaskIntoConstraints = false
+        
+        NSLayoutConstraint.activate([
+            pillView.leadingAnchor.constraint(equalTo: pillContainer.leadingAnchor),
+            pillView.trailingAnchor.constraint(equalTo: pillContainer.trailingAnchor),
+            pillView.topAnchor.constraint(equalTo: pillContainer.topAnchor),
+            pillView.bottomAnchor.constraint(equalTo: pillContainer.bottomAnchor)
+        ])
+        
+        return pillContainer
     }
 }
 

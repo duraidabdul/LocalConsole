@@ -22,7 +22,6 @@ extension UIScreen {
     static var hasRoundedCorners = UIScreen.main.value(forKey: "_" + "display" + "Corner" + "Radius") as! CGFloat > 0
 }
 
-@available(iOSApplicationExtension, unavailable)
 extension UIApplication {
     var statusBarHeight: CGFloat {
         if let window = UIApplication.shared.windows.first {
