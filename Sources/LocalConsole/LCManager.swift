@@ -12,6 +12,7 @@ import SwiftUI
 
 var GLOBAL_BORDER_TRACKERS: [BorderManager] = []
 
+@available(iOSApplicationExtension, unavailable)
 public class LCManager: NSObject, UIGestureRecognizerDelegate {
     
     public static let shared = LCManager()

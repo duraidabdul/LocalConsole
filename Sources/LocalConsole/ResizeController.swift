@@ -7,6 +7,7 @@
 
 import UIKit
 
+@available(iOSApplicationExtension, unavailable)
 class ResizeController {
     
     public static let shared = ResizeController()
@@ -329,6 +330,7 @@ class ResizeController {
     }
 }
 
+@available(iOSApplicationExtension, unavailable)
 class PlatterView: UIView {
     
     override init(frame: CGRect) {
