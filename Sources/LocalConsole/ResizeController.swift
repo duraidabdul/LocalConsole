@@ -236,6 +236,7 @@ class ResizeController {
                 }
             }()
             
+            LCManager.shared.lumaHeightAnchor.constant = resolvedHeight
             LCManager.shared.consoleSize.height = resolvedHeight
             LCManager.shared.consoleView.center.y = consoleCenterPoint.y
             
@@ -243,9 +244,11 @@ class ResizeController {
             UIViewPropertyAnimator(duration: 0.4, dampingRatio: 0.7) {
                 if LCManager.shared.consoleSize.height > maxHeight {
                     LCManager.shared.consoleSize.height = maxHeight
+                    LCManager.shared.lumaHeightAnchor.constant = maxHeight
                 }
                 if LCManager.shared.consoleSize.height < minHeight {
                     LCManager.shared.consoleSize.height = minHeight
+                    LCManager.shared.lumaHeightAnchor.constant = minHeight
                 }
                 
                 LCManager.shared.consoleView.center.y = self.consoleCenterPoint.y

@@ -50,22 +50,24 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     
     lazy var borderView = UIView()
     
+    var lumaWidthAnchor: NSLayoutConstraint!
     var lumaHeightAnchor: NSLayoutConstraint!
     
-    lazy var lumaView: UIView = {
-        let lumaView = UIView.lumaView()
-        lumaView.alpha = 0
+    lazy var lumaView: LumaView = {
+        let lumaView = LumaView()
+        lumaView.foregroundView.backgroundColor = .black
+        lumaView.layer.cornerRadius = consoleView.layer.cornerRadius
         
         consoleView.addSubview(lumaView)
         
         lumaView.translatesAutoresizingMaskIntoConstraints = false
         
-        lumaHeightAnchor = lumaView.heightAnchor.constraint(equalToConstant: 96)
+        lumaHeightAnchor = lumaView.heightAnchor.constraint(equalToConstant: consoleView.frame.size.height)
         
         NSLayoutConstraint.activate([
-            lumaView.leadingAnchor.constraint(equalTo: consoleView.leadingAnchor),
-            lumaView.trailingAnchor.constraint(equalTo: consoleView.trailingAnchor),
+            lumaView.widthAnchor.constraint(equalTo: consoleView.widthAnchor),
             lumaHeightAnchor,
+            lumaView.centerXAnchor.constraint(equalTo: consoleView.centerXAnchor),
             lumaView.centerYAnchor.constraint(equalTo: consoleView.centerYAnchor)
         ])
         
@@ -149,10 +151,10 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 
                 // Left edge hiding endpoints.
                 if consoleView.center.y < UIScreen.portraitSize.height / 2 {
-                    endpoints.append(CGPoint(x: -consoleSize.width / 2 + 12,
+                    endpoints.append(CGPoint(x: -consoleSize.width / 2 + 10,
                                              y: endpoints[0].y))
                 } else {
-                    endpoints.append(CGPoint(x: -consoleSize.width / 2 + 12,
+                    endpoints.append(CGPoint(x: -consoleSize.width / 2 + 10,
                                              y: endpoints[1].y))
                 }
             } else if consoleView.frame.maxX >= UIScreen.portraitSize.width {
@@ -161,24 +163,47 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 
                 // Right edge hiding endpoints.
                 if consoleView.center.y < UIScreen.portraitSize.height / 2 {
-                    endpoints.append(CGPoint(x: UIScreen.portraitSize.width + consoleSize.width / 2 - 12,
+                    endpoints.append(CGPoint(x: UIScreen.portraitSize.width + consoleSize.width / 2 - 10,
                                              y: endpoints[0].y))
                 } else {
-                    endpoints.append(CGPoint(x: UIScreen.portraitSize.width + consoleSize.width / 2 - 12,
+                    endpoints.append(CGPoint(x: UIScreen.portraitSize.width + consoleSize.width / 2 - 10,
                                              y: endpoints[1].y))
                 }
             }
             
             return endpoints
-//            } else if consoleView.frame.minX >= 12
             
         } else {
             
             // Two endpoints, one for the top, one for the bottom..
-            return [CGPoint(x: UIScreen.portraitSize.width / 2,
-                            y: (UIScreen.hasRoundedCorners ? 44 : 16) + consoleSize.height / 2 + 12),
-                    CGPoint(x: UIScreen.portraitSize.width / 2,
-                            y: UIScreen.portraitSize.height - consoleSize.height / 2 - (keyboardHeight ?? consoleWindow?.safeAreaInsets.bottom ?? 0) - 12)]
+            var endpoints = [CGPoint(x: UIScreen.portraitSize.width / 2,
+                                     y: (UIScreen.hasRoundedCorners ? 44 : 16) + consoleSize.height / 2 + 12),
+                             CGPoint(x: UIScreen.portraitSize.width / 2,
+                                     y: UIScreen.portraitSize.height - consoleSize.height / 2 - (keyboardHeight ?? consoleWindow?.safeAreaInsets.bottom ?? 0) - 12)]
+            
+            if consoleView.frame.minX <= 0 {
+                
+                // Left edge hiding endpoints.
+                if consoleView.center.y < UIScreen.portraitSize.height / 2 {
+                    endpoints.append(CGPoint(x: -consoleSize.width / 2 + 10,
+                                             y: endpoints[0].y))
+                } else {
+                    endpoints.append(CGPoint(x: -consoleSize.width / 2 + 10,
+                                             y: endpoints[1].y))
+                }
+            } else if consoleView.frame.maxX >= UIScreen.portraitSize.width {
+                
+                // Right edge hiding endpoints.
+                if consoleView.center.y < UIScreen.portraitSize.height / 2 {
+                    endpoints.append(CGPoint(x: UIScreen.portraitSize.width + consoleSize.width / 2 - 10,
+                                             y: endpoints[0].y))
+                } else {
+                    endpoints.append(CGPoint(x: UIScreen.portraitSize.width + consoleSize.width / 2 - 10,
+                                             y: endpoints[1].y))
+                }
+            }
+            
+            return endpoints
         }
     }
     
@@ -187,8 +212,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     func configureConsole() {
         consoleSize = CGSize(width: UserDefaults.standard.object(forKey: "LocalConsole_Width") as? CGFloat ?? consoleSize.width,
                              height: UserDefaults.standard.object(forKey: "LocalConsole_Height") as? CGFloat ?? consoleSize.height)
-        
-        consoleView.backgroundColor = .black
+
         
         consoleView.layer.shadowRadius = 16
         consoleView.layer.shadowOpacity = 0.5
@@ -259,7 +283,8 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         circle.isUserInteractionEnabled = false
         menuButton.addSubview(circle)
         
-        let ellipsisImage = UIImageView(image: UIImage(systemName: "ellipsis", withConfiguration: UIImage.SymbolConfiguration(pointSize: 17)))
+        let ellipsisImage = UIImageView(image: UIImage(systemName: "ellipsis",
+                                                       withConfiguration: UIImage.SymbolConfiguration(pointSize: 17, weight: .medium)))
         ellipsisImage.frame.size = circle.bounds.size
         ellipsisImage.contentMode = .center
         circle.addSubview(ellipsisImage)
@@ -374,9 +399,6 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                     lumaView.layer.cornerRadius = consoleView.layer.cornerRadius
                     lumaHeightAnchor.constant = consoleView.frame.size.height
                     consoleView.layoutIfNeeded()
-                    
-                    lumaView.subviews.first?.alpha = 1
-                    lumaView.backgroundColor = .clear
                 }
                 
                 UIViewPropertyAnimator(duration: 0.3, dampingRatio: 1) { [self] in
@@ -385,19 +407,15 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 }.startAnimation()
                 
                 UIViewPropertyAnimator(duration: 0.5, dampingRatio: 1) { [self] in
-                    lumaView.alpha = 1
-                }.startAnimation()
-                
-                UIViewPropertyAnimator(duration: 0.2, dampingRatio: 1) { [self] in
+                    lumaView.foregroundView.alpha = 0
                     borderView.alpha = 0
-                    consoleView.backgroundColor = .clear
-                }.startAnimation(afterDelay: 0.25)
+                }.startAnimation()
                 
                 lumaHeightAnchor.constant = 96
                 UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
                     lumaView.layer.cornerRadius = 8
                     consoleView.layoutIfNeeded()
-                }.startAnimation(afterDelay: 0.3)
+                }.startAnimation(afterDelay: 0.06)
                 
                 consoleTextView.isUserInteractionEnabled = false
                 
@@ -406,28 +424,19 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
                     consoleView.layoutIfNeeded()
                     lumaView.layer.cornerRadius = consoleView.layer.cornerRadius
-                    
-                    lumaView.backgroundColor = .black
                 }.startAnimation()
-                
-                UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
-                    lumaView.subviews.first?.alpha = 0
-                }.startAnimation(afterDelay: 0.2)
                 
                 UIViewPropertyAnimator(duration: 0.3, dampingRatio: 1) { [self] in
                     consoleTextView.alpha = 1
                     menuButton.alpha = 1
                     borderView.alpha = 1
-                    consoleView.backgroundColor = .black
-                }.startAnimation(afterDelay: 0.3)
+                }.startAnimation(afterDelay: 0.2)
                 
-                UIViewPropertyAnimator(duration: 0.6, dampingRatio: 1) { [self] in
-                    lumaView.alpha = 0
-                    
-                }.startAnimation(afterDelay: 0.4)
+                UIViewPropertyAnimator(duration: 0.8, dampingRatio: 1) { [self] in
+                    lumaView.foregroundView.alpha = 1
+                }.startAnimation()
                 
                 consoleTextView.isUserInteractionEnabled = true
-                
             }
         }
     }
@@ -891,8 +900,27 @@ extension UIView {
         GLOBAL_BORDER_TRACKERS.append(tracker)
         tracker.activate()
     }
+}
+
+extension UIWindow {
     
-    static func lumaView() -> UIView {
+    /// Make sure this window does not have control over the status bar appearance.
+    static let swizzleStatusBarAppearanceOverride: Void = {
+        guard let originalMethod = class_getInstanceMethod(UIWindow.self, NSSelectorFromString("_can" + "Affect" + "Sta" + "tus" + "Bar" + "Appe" + "arance")),
+              let swizzledMethod = class_getInstanceMethod(UIWindow.self, #selector(swizzled_statusBarAppearance))
+        else { return }
+        method_exchangeImplementations(originalMethod, swizzledMethod)
+    }()
+    
+    @objc func swizzled_statusBarAppearance() -> Bool {
+        return isKeyWindow
+    }
+}
+
+//#endif
+
+class LumaView: UIView {
+    lazy var visualEffectView: UIView = {
         Bundle(path: "/Sys" + "tem/Lib" + "rary/Private" + "Frameworks/Material" + "Kit." + "framework")!.load()
         
         let Pill = NSClassFromString("MT" + "Luma" + "Dodge" + "Pill" + "View") as! UIView.Type
@@ -917,40 +945,51 @@ extension UIView {
         pillView.setValue(1, forKey: "background" + "Luminance")
         pillView.perform(NSSelectorFromString("_" + "update" + "Style"))
         
-        let pillContainer = UIView()
-        pillContainer.addSubview(pillView)
-        pillContainer.clipsToBounds = true
-        pillContainer.layer.cornerCurve = .continuous
+        addSubview(pillView)
         
         pillView.translatesAutoresizingMaskIntoConstraints = false
         
         NSLayoutConstraint.activate([
-            pillView.leadingAnchor.constraint(equalTo: pillContainer.leadingAnchor),
-            pillView.trailingAnchor.constraint(equalTo: pillContainer.trailingAnchor),
-            pillView.topAnchor.constraint(equalTo: pillContainer.topAnchor),
-            pillView.bottomAnchor.constraint(equalTo: pillContainer.bottomAnchor)
+            pillView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            pillView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            pillView.topAnchor.constraint(equalTo: topAnchor),
+            pillView.bottomAnchor.constraint(equalTo: bottomAnchor)
         ])
         
-        return pillContainer
-    }
-}
-
-extension UIWindow {
-    
-    /// Make sure this window does not have control over the status bar appearance.
-    static let swizzleStatusBarAppearanceOverride: Void = {
-        guard let originalMethod = class_getInstanceMethod(UIWindow.self, NSSelectorFromString("_can" + "Affect" + "Sta" + "tus" + "Bar" + "Appe" + "arance")),
-              let swizzledMethod = class_getInstanceMethod(UIWindow.self, #selector(swizzled_statusBarAppearance))
-        else { return }
-        method_exchangeImplementations(originalMethod, swizzledMethod)
+        return pillView
     }()
     
-    @objc func swizzled_statusBarAppearance() -> Bool {
-        return isKeyWindow
+    lazy var foregroundView: UIView = {
+        let view = UIView()
+        
+        addSubview(view)
+        
+        view.translatesAutoresizingMaskIntoConstraints = false
+        
+        NSLayoutConstraint.activate([
+            view.leadingAnchor.constraint(equalTo: leadingAnchor),
+            view.trailingAnchor.constraint(equalTo: trailingAnchor),
+            view.topAnchor.constraint(equalTo: topAnchor),
+            view.bottomAnchor.constraint(equalTo: bottomAnchor)
+        ])
+        
+        return view
+    }()
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        
+        let _ = visualEffectView
+        let _ = foregroundView
+        
+        layer.cornerCurve = .continuous
+        clipsToBounds = true
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
 }
-
-//#endif
 
 class InvertedTextView: UITextView {
     
