@@ -142,7 +142,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                              CGPoint(x: UIScreen.portraitSize.width - consoleSize.width / 2 - 12,
                                      y: UIScreen.portraitSize.height - consoleSize.height / 2 - (keyboardHeight ?? consoleWindow?.safeAreaInsets.bottom ?? 0) - 12)]
             
-            if consoleView.frame.minX <= -10 {
+            if consoleView.frame.minX <= 0 {
                 
                 endpoints = [endpoints[0], endpoints[1]]
                 
@@ -154,7 +154,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                     endpoints.append(CGPoint(x: -consoleSize.width / 2 + 12,
                                              y: endpoints[1].y))
                 }
-            } else if consoleView.frame.maxX >= UIScreen.portraitSize.width + 10 {
+            } else if consoleView.frame.maxX >= UIScreen.portraitSize.width {
                 
                 endpoints = [endpoints[2], endpoints[3]]
                 
