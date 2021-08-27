@@ -432,7 +432,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                     borderView.alpha = 1
                 }.startAnimation(afterDelay: 0.2)
                 
-                UIViewPropertyAnimator(duration: 0.8, dampingRatio: 1) { [self] in
+                UIViewPropertyAnimator(duration: 0.65, dampingRatio: 1) { [self] in
                     lumaView.foregroundView.alpha = 1
                 }.startAnimation()
                 
@@ -468,7 +468,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         didSet {
             
             if consoleView.center != possibleEndpoints[0] && consoleView.center != possibleEndpoints[1] {
-                let nearestTargetPosition = nearestTargetTo(consoleView.center, possibleTargets: possibleEndpoints.suffix(2))
+                let nearestTargetPosition = nearestTargetTo(consoleView.center, possibleTargets: [possibleEndpoints[1], possibleEndpoints[3]])
                 
                 UIViewPropertyAnimator(duration: 0.55, dampingRatio: 1) {
                     self.consoleView.center = nearestTargetPosition
@@ -766,7 +766,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             initialViewLocation = consoleView.center
         }
         
-        guard !scrollLocked || grabberMode else { return }
+        guard !scrollLocked else { return }
         
         let translation = recognizer.translation(in: consoleView.superview)
         let velocity = recognizer.velocity(in: consoleView.superview)
@@ -776,6 +776,16 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             
             consoleView.center.x = initialViewLocation.x + translation.x
             consoleView.center.y = initialViewLocation.y + translation.y
+            
+            if consoleView.frame.maxX > 30 && consoleView.frame.minX < UIScreen.portraitSize.width - 30 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    self.grabberMode = false
+                }
+            } else {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    self.grabberMode = true
+                }
+            }
             
         case .ended, .cancelled:
             
@@ -803,6 +813,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                 self.grabberMode = nearestTargetPosition.x < 0 || nearestTargetPosition.x > UIScreen.portraitSize.width
+                self.scrollLocked = !self.grabberMode
             }
             
         default: break
