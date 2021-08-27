@@ -478,6 +478,7 @@ class PlatterView: UIView {
             
             UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) {
                 LCManager.shared.consoleSize = LCManager.shared.defaultConsoleSize
+                LCManager.shared.lumaHeightAnchor.constant = LCManager.shared.defaultConsoleSize.height
                 LCManager.shared.consoleView.center = ResizeController.shared.consoleCenterPoint
                 LCManager.shared.consoleWindow?.layoutIfNeeded()
             }.startAnimation()
