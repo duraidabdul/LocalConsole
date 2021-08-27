@@ -136,21 +136,27 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         if consoleSize.width < UIScreen.portraitSize.width - 112 {
             
             // Four endpoints, one for each corner.
-            var endpoints = [CGPoint(x: consoleSize.width / 2 + 12,
-                                     y: (UIScreen.hasRoundedCorners ? 44 : 16) + consoleSize.height / 2 + 12),
-                             CGPoint(x: consoleSize.width / 2 + 12,
-                                     y: UIScreen.portraitSize.height - consoleSize.height / 2 - (keyboardHeight ?? consoleWindow?.safeAreaInsets.bottom ?? 0) - 12),
-                             CGPoint(x: UIScreen.portraitSize.width - consoleSize.width / 2 - 12,
-                                     y: (UIScreen.hasRoundedCorners ? 44 : 16) + consoleSize.height / 2 + 12),
-                             CGPoint(x: UIScreen.portraitSize.width - consoleSize.width / 2 - 12,
-                                     y: UIScreen.portraitSize.height - consoleSize.height / 2 - (keyboardHeight ?? consoleWindow?.safeAreaInsets.bottom ?? 0) - 12)]
+            var endpoints = [
+                
+                // Top endpoints.
+                CGPoint(x: consoleSize.width / 2 + 12,
+                        y: (UIScreen.hasRoundedCorners ? 44 : 16) + consoleSize.height / 2 + 12),
+                CGPoint(x: UIScreen.portraitSize.width - consoleSize.width / 2 - 12,
+                        y: (UIScreen.hasRoundedCorners ? 44 : 16) + consoleSize.height / 2 + 12),
+                
+                // Bottom endpoints.
+                CGPoint(x: consoleSize.width / 2 + 12,
+                        y: UIScreen.portraitSize.height - consoleSize.height / 2 - (keyboardHeight ?? consoleWindow?.safeAreaInsets.bottom ?? 0) - 12),
+                CGPoint(x: UIScreen.portraitSize.width - consoleSize.width / 2 - 12,
+                        y: UIScreen.portraitSize.height - consoleSize.height / 2 - (keyboardHeight ?? consoleWindow?.safeAreaInsets.bottom ?? 0) - 12)]
             
             if consoleView.frame.minX <= 0 {
                 
-                endpoints = [endpoints[0], endpoints[1]]
+                // Left edge endpoints.
+                endpoints = [endpoints[0], endpoints[2]]
                 
                 // Left edge hiding endpoints.
-                if consoleView.center.y < UIScreen.portraitSize.height / 2 {
+                if consoleView.center.y < (UIScreen.portraitSize.height - (temporaryKeyboardHeightValueTracker ?? 0)) / 2 {
                     endpoints.append(CGPoint(x: -consoleSize.width / 2 + 10,
                                              y: endpoints[0].y))
                 } else {
@@ -159,10 +165,11 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 }
             } else if consoleView.frame.maxX >= UIScreen.portraitSize.width {
                 
-                endpoints = [endpoints[2], endpoints[3]]
+                // Right edge endpoints.
+                endpoints = [endpoints[1], endpoints[3]]
                 
                 // Right edge hiding endpoints.
-                if consoleView.center.y < UIScreen.portraitSize.height / 2 {
+                if consoleView.center.y < (UIScreen.portraitSize.height - (temporaryKeyboardHeightValueTracker ?? 0)) / 2 {
                     endpoints.append(CGPoint(x: UIScreen.portraitSize.width + consoleSize.width / 2 - 10,
                                              y: endpoints[0].y))
                 } else {
@@ -184,7 +191,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             if consoleView.frame.minX <= 0 {
                 
                 // Left edge hiding endpoints.
-                if consoleView.center.y < UIScreen.portraitSize.height / 2 {
+                if consoleView.center.y < (UIScreen.portraitSize.height - (temporaryKeyboardHeightValueTracker ?? 0)) / 2 {
                     endpoints.append(CGPoint(x: -consoleSize.width / 2 + 10,
                                              y: endpoints[0].y))
                 } else {
@@ -194,7 +201,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             } else if consoleView.frame.maxX >= UIScreen.portraitSize.width {
                 
                 // Right edge hiding endpoints.
-                if consoleView.center.y < UIScreen.portraitSize.height / 2 {
+                if consoleView.center.y < (UIScreen.portraitSize.height - (temporaryKeyboardHeightValueTracker ?? 0)) / 2 {
                     endpoints.append(CGPoint(x: UIScreen.portraitSize.width + consoleSize.width / 2 - 10,
                                              y: endpoints[0].y))
                 } else {
@@ -462,18 +469,25 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     
     // MARK: - Private
     
+    var temporaryKeyboardHeightValueTracker: CGFloat?
     
     // MARK: Handle keyboard show/hide.
     private var keyboardHeight: CGFloat? = nil {
         didSet {
             
+            temporaryKeyboardHeightValueTracker = oldValue
+            
             if consoleView.center != possibleEndpoints[0] && consoleView.center != possibleEndpoints[1] {
-                let nearestTargetPosition = nearestTargetTo(consoleView.center, possibleTargets: [possibleEndpoints[1], possibleEndpoints[3]])
+                let nearestTargetPosition = nearestTargetTo(consoleView.center, possibleTargets: possibleEndpoints.suffix(2))
+                
+                Swift.print(possibleEndpoints.suffix(2))
                 
                 UIViewPropertyAnimator(duration: 0.55, dampingRatio: 1) {
                     self.consoleView.center = nearestTargetPosition
                 }.startAnimation()
             }
+            
+            temporaryKeyboardHeightValueTracker = keyboardHeight
         }
     }
     
