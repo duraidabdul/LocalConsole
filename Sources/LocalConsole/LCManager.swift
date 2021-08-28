@@ -606,10 +606,6 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         }
     }
     
-    @objc func toggleLock() {
-        scrollLocked.toggle()
-    }
-    
     func commitTextChanges(requestMenuUpdate menuUpdateRequested: Bool) {
         
         if consoleTextView.contentOffset.y > consoleTextView.contentSize.height - consoleTextView.bounds.size.height - 20 {
@@ -758,7 +754,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             }.startAnimation()
         case .cancelled, .ended:
             
-            scrollLocked = true
+            if !grabberMode { scrollLocked = true }
             
             UIViewPropertyAnimator(duration: 0.8, dampingRatio: 0.5) { [self] in
                 consoleView.transform = .init(scaleX: 1, y: 1)
@@ -866,15 +862,9 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         switch recognizer.state {
         case .began:
             consolePiPTouchDown()
-        case .cancelled:
-            consolePiPTouchUp()
         case .changed:
             break
-        case .ended:
-            consolePiPTouchUp()
-        case .failed:
-            consolePiPTouchUp()
-        case .possible:
+        case .ended, .cancelled, .possible, .failed:
             consolePiPTouchUp()
         @unknown default:
             break
