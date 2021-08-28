@@ -411,11 +411,12 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 UIViewPropertyAnimator(duration: 0.3, dampingRatio: 1) { [self] in
                     consoleTextView.alpha = 0
                     menuButton.alpha = 0
+                    borderView.alpha = 0
                 }.startAnimation()
                 
                 UIViewPropertyAnimator(duration: 0.5, dampingRatio: 1) { [self] in
                     lumaView.foregroundView.alpha = 0
-                    borderView.alpha = 0
+                    
                 }.startAnimation()
                 
                 lumaHeightAnchor.constant = 96
