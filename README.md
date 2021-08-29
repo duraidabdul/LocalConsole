@@ -46,8 +46,3 @@ consoleManager.copy()
 // Change the console view font size.
 consoleManager.fontSize = 5
 ```
-
-
-## **To-Do**
-* Screen edge console hiding
-* Make console view reactive to landscape/portrait switch
