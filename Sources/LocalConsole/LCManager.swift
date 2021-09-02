@@ -308,6 +308,20 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     func configureWindow() {
         var windowSceneFound = false
         
+        // Update console cached based on last-cached origin.
+        func updateConsoleOrigin() {
+            let cachedConsolePosition = CGPoint(x: UserDefaults.standard.object(forKey: "LocalConsole_X") as? CGFloat ?? possibleEndpoints.first!.x,
+                                                y: UserDefaults.standard.object(forKey: "LocalConsole_Y") as? CGFloat ?? possibleEndpoints.first!.y)
+            
+            consoleView.center = cachedConsolePosition // Update console center so possibleEndpoints are calculated correctly.
+            consoleView.center = nearestTargetTo(cachedConsolePosition, possibleTargets: possibleEndpoints)
+            
+            if consoleView.center.x < 0 || consoleView.center.x > UIScreen.portraitSize.width {
+                grabberMode = true
+                scrollLocked = !grabberMode
+            }
+        }
+        
         // Configure console window.
         func fetchWindowScene() {
             let windowScene = UIApplication.shared
@@ -326,10 +340,10 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 consoleWindow?.addSubview(consoleView)
                 
                 UIWindow.swizzleStatusBarAppearanceOverride
+                
+                updateConsoleOrigin()
             }
         }
-        
-        fetchWindowScene()
         
         /// Ensures the window is configured (i.e. scene has been found). If not, delay and wait for a scene to prepare itself, then try again.
         for i in 1...10 {
@@ -346,16 +360,6 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                     isVisible = false
                     consoleView.layer.removeAllAnimations()
                     isVisible = true
-                }
-                
-                let cachedConsolePosition = CGPoint(x: UserDefaults.standard.object(forKey: "LocalConsole_X") as? CGFloat ?? possibleEndpoints.first!.x,
-                                                    y: UserDefaults.standard.object(forKey: "LocalConsole_Y") as? CGFloat ?? possibleEndpoints.first!.y)
-                consoleView.center = cachedConsolePosition // Update console center so possibleEndpoints are calculated correctly.
-                consoleView.center = nearestTargetTo(cachedConsolePosition, possibleTargets: possibleEndpoints)
-                
-                if consoleView.center.x < 0 || consoleView.center.x > UIScreen.portraitSize.width {
-                    grabberMode = true
-                    scrollLocked = !grabberMode
                 }
             }
         }
