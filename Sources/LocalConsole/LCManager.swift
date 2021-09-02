@@ -224,7 +224,12 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         consoleView.layer.shadowRadius = 16
         consoleView.layer.shadowOpacity = 0.5
         consoleView.layer.shadowOffset = CGSize(width: 0, height: 2)
-        consoleView.center = possibleEndpoints.first!
+        
+        let cachedConsolePosition = CGPoint(x: UserDefaults.standard.object(forKey: "LocalConsole_X") as? CGFloat ?? possibleEndpoints.first!.x,
+                                            y: UserDefaults.standard.object(forKey: "LocalConsole_Y") as? CGFloat ?? possibleEndpoints.first!.y)
+        
+        consoleView.center = nearestTargetTo(cachedConsolePosition, possibleTargets: possibleEndpoints)
+        
         consoleView.alpha = 0
         
         consoleView.layer.cornerRadius = 22
@@ -300,6 +305,11 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         menuButton.menu = makeMenu()
         menuButton.showsMenuAsPrimaryAction = true
         consoleView.addSubview(menuButton)
+        
+        if consoleView.center.x < 0 || consoleView.center.x > UIScreen.portraitSize.width {
+            grabberMode = true
+            scrollLocked = !grabberMode
+        }
         
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
@@ -815,12 +825,15 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 dy: relativeVelocity(forVelocity: velocity.y, from: consoleView.center.y, to: nearestTargetPosition.y)
             )
             
-            let timingParameters = UISpringTimingParameters(damping: 1, response: 0.4, initialVelocity: relativeInitialVelocity)
+            let timingParameters = UISpringTimingParameters(damping: 0.85, response: 0.45, initialVelocity: relativeInitialVelocity)
             let positionAnimator = UIViewPropertyAnimator(duration: 0, timingParameters: timingParameters)
             positionAnimator.addAnimations { [self] in
                 consoleView.center = nearestTargetPosition
             }
             positionAnimator.startAnimation()
+            
+            UserDefaults.standard.set(nearestTargetPosition.x, forKey: "LocalConsole_X")
+            UserDefaults.standard.set(nearestTargetPosition.y, forKey: "LocalConsole_Y")
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                 self.grabberMode = nearestTargetPosition.x < 0 || nearestTargetPosition.x > UIScreen.portraitSize.width
