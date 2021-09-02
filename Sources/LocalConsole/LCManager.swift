@@ -224,12 +224,6 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         consoleView.layer.shadowRadius = 16
         consoleView.layer.shadowOpacity = 0.5
         consoleView.layer.shadowOffset = CGSize(width: 0, height: 2)
-        
-        let cachedConsolePosition = CGPoint(x: UserDefaults.standard.object(forKey: "LocalConsole_X") as? CGFloat ?? possibleEndpoints.first!.x,
-                                            y: UserDefaults.standard.object(forKey: "LocalConsole_Y") as? CGFloat ?? possibleEndpoints.first!.y)
-        
-        consoleView.center = nearestTargetTo(cachedConsolePosition, possibleTargets: possibleEndpoints)
-        
         consoleView.alpha = 0
         
         consoleView.layer.cornerRadius = 22
@@ -306,11 +300,6 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         menuButton.showsMenuAsPrimaryAction = true
         consoleView.addSubview(menuButton)
         
-        if consoleView.center.x < 0 || consoleView.center.x > UIScreen.portraitSize.width {
-            grabberMode = true
-            scrollLocked = !grabberMode
-        }
-        
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
     }
@@ -357,6 +346,16 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                     isVisible = false
                     consoleView.layer.removeAllAnimations()
                     isVisible = true
+                }
+                
+                let cachedConsolePosition = CGPoint(x: UserDefaults.standard.object(forKey: "LocalConsole_X") as? CGFloat ?? possibleEndpoints.first!.x,
+                                                    y: UserDefaults.standard.object(forKey: "LocalConsole_Y") as? CGFloat ?? possibleEndpoints.first!.y)
+                consoleView.center = cachedConsolePosition // Update console center so possibleEndpoints are calculated correctly.
+                consoleView.center = nearestTargetTo(cachedConsolePosition, possibleTargets: possibleEndpoints)
+                
+                if consoleView.center.x < 0 || consoleView.center.x > UIScreen.portraitSize.width {
+                    grabberMode = true
+                    scrollLocked = !grabberMode
                 }
             }
         }
