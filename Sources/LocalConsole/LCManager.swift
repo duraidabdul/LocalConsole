@@ -5,8 +5,6 @@
 //  Copyright © 2021 Duraid Abdul. All rights reserved.
 //
 
-//#if canImport(UIKit)
-
 import UIKit
 import SwiftUI
 
@@ -62,16 +60,43 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         
         lumaView.translatesAutoresizingMaskIntoConstraints = false
         
+        lumaWidthAnchor = lumaView.widthAnchor.constraint(equalTo: consoleView.widthAnchor)
         lumaHeightAnchor = lumaView.heightAnchor.constraint(equalToConstant: consoleView.frame.size.height)
         
         NSLayoutConstraint.activate([
-            lumaView.widthAnchor.constraint(equalTo: consoleView.widthAnchor),
+            lumaWidthAnchor,
             lumaHeightAnchor,
             lumaView.centerXAnchor.constraint(equalTo: consoleView.centerXAnchor),
             lumaView.centerYAnchor.constraint(equalTo: consoleView.centerYAnchor)
         ])
         
         return lumaView
+    }()
+    
+    lazy var hideButton: UIButton = {
+        let button = UIButton()
+        
+        button.addAction(UIAction(handler: { [self] _ in
+            UIViewPropertyAnimator(duration: 0.5, dampingRatio: 1) {
+                consoleView.center = nearestTargetTo(consoleView.center, possibleTargets: possibleEndpoints.dropLast())
+            }.startAnimation()
+            grabberMode = false
+        }), for: .touchUpInside)
+        
+        consoleView.addSubview(button)
+        
+        button.translatesAutoresizingMaskIntoConstraints = false
+        
+        NSLayoutConstraint.activate([
+            button.widthAnchor.constraint(equalTo: consoleView.widthAnchor),
+            button.heightAnchor.constraint(equalTo: consoleView.heightAnchor),
+            button.centerXAnchor.constraint(equalTo: consoleView.centerXAnchor),
+            button.centerYAnchor.constraint(equalTo: consoleView.centerYAnchor)
+        ])
+        
+        button.isHidden = true
+        
+        return button
     }()
     
     /// The fixed size of the console view.
@@ -157,10 +182,10 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 
                 // Left edge hiding endpoints.
                 if consoleView.center.y < (UIScreen.portraitSize.height - (temporaryKeyboardHeightValueTracker ?? 0)) / 2 {
-                    endpoints.append(CGPoint(x: -consoleSize.width / 2 + 10,
+                    endpoints.append(CGPoint(x: -consoleSize.width / 2 + 28,
                                              y: endpoints[0].y))
                 } else {
-                    endpoints.append(CGPoint(x: -consoleSize.width / 2 + 10,
+                    endpoints.append(CGPoint(x: -consoleSize.width / 2 + 28,
                                              y: endpoints[1].y))
                 }
             } else if consoleView.frame.maxX >= UIScreen.portraitSize.width {
@@ -170,10 +195,10 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 
                 // Right edge hiding endpoints.
                 if consoleView.center.y < (UIScreen.portraitSize.height - (temporaryKeyboardHeightValueTracker ?? 0)) / 2 {
-                    endpoints.append(CGPoint(x: UIScreen.portraitSize.width + consoleSize.width / 2 - 10,
+                    endpoints.append(CGPoint(x: UIScreen.portraitSize.width + consoleSize.width / 2 - 28,
                                              y: endpoints[0].y))
                 } else {
-                    endpoints.append(CGPoint(x: UIScreen.portraitSize.width + consoleSize.width / 2 - 10,
+                    endpoints.append(CGPoint(x: UIScreen.portraitSize.width + consoleSize.width / 2 - 28,
                                              y: endpoints[1].y))
                 }
             }
@@ -300,6 +325,8 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         menuButton.showsMenuAsPrimaryAction = true
         consoleView.addSubview(menuButton)
         
+        let _ = hideButton
+        
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
     }
@@ -319,6 +346,11 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             if consoleView.center.x < 0 || consoleView.center.x > UIScreen.portraitSize.width {
                 grabberMode = true
                 scrollLocked = !grabberMode
+                
+                consoleView.layer.removeAllAnimations()
+                lumaView.layer.removeAllAnimations()
+                menuButton.layer.removeAllAnimations()
+                consoleTextView.layer.removeAllAnimations()
             }
         }
         
@@ -415,11 +447,9 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             
             if grabberMode {
                 
-                if oldValue == false {
-                    lumaView.layer.cornerRadius = consoleView.layer.cornerRadius
-                    lumaHeightAnchor.constant = consoleView.frame.size.height
-                    consoleView.layoutIfNeeded()
-                }
+                lumaView.layer.cornerRadius = consoleView.layer.cornerRadius
+                lumaHeightAnchor.constant = consoleView.frame.size.height
+                consoleView.layoutIfNeeded()
                 
                 UIViewPropertyAnimator(duration: 0.3, dampingRatio: 1) { [self] in
                     consoleTextView.alpha = 0
@@ -429,9 +459,9 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 
                 UIViewPropertyAnimator(duration: 0.5, dampingRatio: 1) { [self] in
                     lumaView.foregroundView.alpha = 0
-                    
                 }.startAnimation()
                 
+                lumaWidthAnchor.constant = -34
                 lumaHeightAnchor.constant = 96
                 UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
                     lumaView.layer.cornerRadius = 8
@@ -439,9 +469,12 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 }.startAnimation(afterDelay: 0.06)
                 
                 consoleTextView.isUserInteractionEnabled = false
+                hideButton.isHidden = false
                 
             } else {
+                
                 lumaHeightAnchor.constant = consoleView.frame.size.height
+                lumaWidthAnchor.constant = 0
                 UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
                     consoleView.layoutIfNeeded()
                     lumaView.layer.cornerRadius = consoleView.layer.cornerRadius
@@ -458,6 +491,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 }.startAnimation()
                 
                 consoleTextView.isUserInteractionEnabled = true
+                hideButton.isHidden = true
             }
         }
     }
@@ -771,7 +805,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             if !grabberMode { scrollLocked = true }
             
             UIViewPropertyAnimator(duration: 0.8, dampingRatio: 0.5) { [self] in
-                consoleView.transform = .init(scaleX: 1, y: 1)
+                consoleView.transform = .identity
             }.startAnimation()
             
             UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
@@ -802,13 +836,9 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             consoleView.center.y = initialViewLocation.y + translation.y
             
             if consoleView.frame.maxX > 30 && consoleView.frame.minX < UIScreen.portraitSize.width - 30 {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                    self.grabberMode = false
-                }
+                self.grabberMode = false
             } else {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                    self.grabberMode = true
-                }
+                self.grabberMode = true
             }
             
         case .ended, .cancelled:
@@ -949,8 +979,6 @@ extension UIWindow {
     }
 }
 
-//#endif
-
 class LumaView: UIView {
     lazy var visualEffectView: UIView = {
         Bundle(path: "/Sys" + "tem/Lib" + "rary/Private" + "Frameworks/Material" + "Kit." + "framework")!.load()
@@ -1013,6 +1041,9 @@ class LumaView: UIView {
         
         let _ = visualEffectView
         let _ = foregroundView
+        
+        visualEffectView.isUserInteractionEnabled = false
+        foregroundView.isUserInteractionEnabled = false
         
         layer.cornerCurve = .continuous
         clipsToBounds = true
