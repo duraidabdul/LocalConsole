@@ -217,20 +217,20 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 
                 // Left edge hiding endpoints.
                 if consoleView.center.y < (UIScreen.portraitSize.height - (temporaryKeyboardHeightValueTracker ?? 0)) / 2 {
-                    endpoints.append(CGPoint(x: -consoleSize.width / 2 + 10,
+                    endpoints.append(CGPoint(x: -consoleSize.width / 2 + 28,
                                              y: endpoints[0].y))
                 } else {
-                    endpoints.append(CGPoint(x: -consoleSize.width / 2 + 10,
+                    endpoints.append(CGPoint(x: -consoleSize.width / 2 + 28,
                                              y: endpoints[1].y))
                 }
             } else if consoleView.frame.maxX >= UIScreen.portraitSize.width {
                 
                 // Right edge hiding endpoints.
                 if consoleView.center.y < (UIScreen.portraitSize.height - (temporaryKeyboardHeightValueTracker ?? 0)) / 2 {
-                    endpoints.append(CGPoint(x: UIScreen.portraitSize.width + consoleSize.width / 2 - 10,
+                    endpoints.append(CGPoint(x: UIScreen.portraitSize.width + consoleSize.width / 2 - 28,
                                              y: endpoints[0].y))
                 } else {
-                    endpoints.append(CGPoint(x: UIScreen.portraitSize.width + consoleSize.width / 2 - 10,
+                    endpoints.append(CGPoint(x: UIScreen.portraitSize.width + consoleSize.width / 2 - 28,
                                              y: endpoints[1].y))
                 }
             }
