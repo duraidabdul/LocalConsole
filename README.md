@@ -24,10 +24,10 @@ let consoleManager = LCManager.shared
 Once prepared, the localConsole can be used throughout your project.
 ```swift
 
-// Show the console view.
+// Activate the console view.
 consoleManager.isVisible = true
 
-// Hide the console view.
+// Deactivate the console view.
 consoleManager.isVisible = false
 ```
 
