@@ -832,13 +832,15 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         switch recognizer.state {
         case .changed:
             
-            consoleView.center.x = initialViewLocation.x + translation.x
-            consoleView.center.y = initialViewLocation.y + translation.y
+            UIViewPropertyAnimator(duration: 0.175, dampingRatio: 1) { [self] in
+                consoleView.center = CGPoint(x: initialViewLocation.x + translation.x,
+                                             y: initialViewLocation.y + translation.y)
+            }.startAnimation()
             
             if consoleView.frame.maxX > 30 && consoleView.frame.minX < UIScreen.portraitSize.width - 30 {
-                self.grabberMode = false
+                grabberMode = false
             } else {
-                self.grabberMode = true
+                grabberMode = true
             }
             
         case .ended, .cancelled:
