@@ -244,7 +244,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     func configureConsole() {
         consoleSize = CGSize(width: UserDefaults.standard.object(forKey: "LocalConsole_Width") as? CGFloat ?? consoleSize.width,
                              height: UserDefaults.standard.object(forKey: "LocalConsole_Height") as? CGFloat ?? consoleSize.height)
-
+        
         
         consoleView.layer.shadowRadius = 16
         consoleView.layer.shadowOpacity = 0.5
@@ -257,8 +257,8 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         let _ = lumaView
         
         borderView.frame = CGRect(x: -1, y: -1,
-                                   width: consoleSize.width + 2,
-                                   height: consoleSize.height + 2)
+                                  width: consoleSize.width + 2,
+                                  height: consoleSize.height + 2)
         borderView.layer.borderWidth = 1
         borderView.layer.borderColor = UIColor(white: 1, alpha: 0.08).cgColor
         borderView.layer.cornerRadius = consoleView.layer.cornerRadius + 1
@@ -689,22 +689,22 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     func makeMenu() -> UIMenu {
         
         let copy = UIAction(title: "Copy",
-                                       image: UIImage(systemName: "doc.on.doc"), handler: { _ in
-                                        self.copy()
-                                       })
+                            image: UIImage(systemName: "doc.on.doc"), handler: { _ in
+            self.copy()
+        })
         
         let resize = UIAction(title: "Resize Console",
                               image: UIImage(systemName: "arrow.left.and.right.square"), handler: { _ in
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                    ResizeController.shared.isActive.toggle()
-                                    ResizeController.shared.platterView.reveal()
-                                }
-                              })
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                ResizeController.shared.isActive.toggle()
+                ResizeController.shared.platterView.reveal()
+            }
+        })
         
         let clear = UIAction(title: "Clear Console",
                              image: UIImage(systemName: "xmark.square"), handler: { _ in
-                                self.clear()
-                             })
+            self.clear()
+        })
         
         let consoleActions = UIMenu(title: "", options: .displayInline, children: [clear, resize])
         
@@ -715,14 +715,14 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         
         let viewFrames = UIAction(title: debugBordersEnabled ? "Hide View Frames" : "Show View Frames",
                                   image: UIImage(systemName: frameSymbol), handler: { _ in
-                                    self.debugBordersEnabled.toggle()
-                                    self.menuButton.menu = self.makeMenu()
-                                  })
+            self.debugBordersEnabled.toggle()
+            self.menuButton.menu = self.makeMenu()
+        })
         
         let systemReport = UIAction(title: "System Report",
-                                  image: UIImage(systemName: "cpu"), handler: { _ in
-                                    self.systemReport()
-                                  })
+                                    image: UIImage(systemName: "cpu"), handler: { _ in
+            self.systemReport()
+        })
         
         // Show the right glyph for the current device being used.
         let deviceSymbol: String = {
@@ -747,28 +747,35 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         }()
         
         let displayReport = UIAction(title: "Display Report",
-                                  image: UIImage(systemName: deviceSymbol), handler: { _ in
-                                    self.displayReport()
-                                  })
+                                     image: UIImage(systemName: deviceSymbol), handler: { _ in
+            self.displayReport()
+        })
         
         let respring = UIAction(title: "Restart Spring" + "Board",
                                 image: UIImage(systemName: "apps.iphone"), handler: { _ in
-                                    guard let window = UIApplication.shared.windows.first else { return }
-                                    
-                                    window.layer.cornerRadius = UIScreen.main.value(forKey: "_displ" + "ayCorn" + "erRa" + "dius") as! CGFloat
-                                    window.layer.masksToBounds = true
-                                    
-                                    let animator = UIViewPropertyAnimator(duration: 0.5, dampingRatio: 1) {
-                                        window.transform = .init(scaleX: 0.96, y: 0.96)
-                                        window.alpha = 0
-                                    }
-                                    animator.addCompletion { _ in
-                                        while true {
-                                            window.snapshotView(afterScreenUpdates: false)
-                                        }
-                                    }
-                                    animator.startAnimation()
-                                })
+            
+            guard let window = UIApplication.shared.windows.first else { return }
+            
+            window.layer.cornerRadius = UIScreen.main.value(forKey: "_displ" + "ayCorn" + "erRa" + "dius") as! CGFloat
+            window.layer.masksToBounds = true
+            
+            UIViewPropertyAnimator(duration: 0.5, dampingRatio: 1) {
+                window.transform = .init(scaleX: 0.96, y: 0.96)
+                window.alpha = 0
+            }.startAnimation()
+            
+            // Concurrently run these snapshots to decrease the time to crash.
+            for _ in 0...1000 {
+                DispatchQueue.global(qos: .default).async {
+                    
+                    // This will cause jetsam to terminate SpringBoard.
+                    while true {
+                        window.snapshotView(afterScreenUpdates: false)
+                    }
+                }
+            }
+        })
+        
         let debugActions = UIMenu(title: "", options: .displayInline,
                                   children: [UIMenu(title: "Debug", image: UIImage(systemName: "ant"),
                                                     children: [viewFrames, systemReport, displayReport, respring])])
@@ -956,7 +963,7 @@ extension UIView {
               let swizzledMethod = class_getInstanceMethod(UIView.self, #selector(swizzled_layoutSubviews)) else { return }
         method_exchangeImplementations(originalMethod, swizzledMethod)
     }
-
+    
     @objc func swizzled_layoutSubviews() {
         swizzled_layoutSubviews()
         
@@ -1063,7 +1070,7 @@ class InvertedTextView: UITextView {
     // Thanks to WWDC21 Lab!
     override func layoutSubviews() {
         super.layoutSubviews()
-
+        
         if panGestureRecognizer.numberOfTouches == 0 && pendingOffsetChange {
             contentOffset.y = contentSize.height - bounds.size.height
         } else {
