@@ -168,9 +168,9 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 
                 // Top endpoints.
                 CGPoint(x: consoleSize.width / 2 + 12,
-                        y: (UIScreen.hasRoundedCorners ? 44 : 16) + consoleSize.height / 2 + 12),
+                        y: (UIScreen.hasRoundedCorners ? 38 : 16) + consoleSize.height / 2 + 12),
                 CGPoint(x: UIScreen.portraitSize.width - consoleSize.width / 2 - 12,
-                        y: (UIScreen.hasRoundedCorners ? 44 : 16) + consoleSize.height / 2 + 12),
+                        y: (UIScreen.hasRoundedCorners ? 38 : 16) + consoleSize.height / 2 + 12),
                 
                 // Bottom endpoints.
                 CGPoint(x: consoleSize.width / 2 + 12,
@@ -212,7 +212,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             
             // Two endpoints, one for the top, one for the bottom..
             var endpoints = [CGPoint(x: UIScreen.portraitSize.width / 2,
-                                     y: (UIScreen.hasRoundedCorners ? 44 : 16) + consoleSize.height / 2 + 12),
+                                     y: (UIScreen.hasRoundedCorners ? 38 : 16) + consoleSize.height / 2 + 12),
                              CGPoint(x: UIScreen.portraitSize.width / 2,
                                      y: UIScreen.portraitSize.height - consoleSize.height / 2 - (keyboardHeight ?? consoleWindow?.safeAreaInsets.bottom ?? 0) - 12)]
             
