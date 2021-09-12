@@ -73,7 +73,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         return lumaView
     }()
     
-    lazy var hideButton: UIButton = {
+    lazy var unhideButton: UIButton = {
         let button = UIButton()
         
         button.addAction(UIAction(handler: { [self] _ in
@@ -81,6 +81,9 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 consoleView.center = nearestTargetTo(consoleView.center, possibleTargets: possibleEndpoints.dropLast())
             }.startAnimation()
             grabberMode = false
+            
+            UserDefaults.standard.set(consoleView.center.x, forKey: "LocalConsole_X")
+            UserDefaults.standard.set(consoleView.center.y, forKey: "LocalConsole_Y")
         }), for: .touchUpInside)
         
         consoleView.addSubview(button)
@@ -325,7 +328,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         menuButton.showsMenuAsPrimaryAction = true
         consoleView.addSubview(menuButton)
         
-        let _ = hideButton
+        let _ = unhideButton
         
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
@@ -337,11 +340,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         
         // Update console cached based on last-cached origin.
         func updateConsoleOrigin() {
-            let cachedConsolePosition = CGPoint(x: UserDefaults.standard.object(forKey: "LocalConsole_X") as? CGFloat ?? possibleEndpoints.first!.x,
-                                                y: UserDefaults.standard.object(forKey: "LocalConsole_Y") as? CGFloat ?? possibleEndpoints.first!.y)
-            
-            consoleView.center = cachedConsolePosition // Update console center so possibleEndpoints are calculated correctly.
-            consoleView.center = nearestTargetTo(cachedConsolePosition, possibleTargets: possibleEndpoints)
+            snapToCachedEndpoint()
             
             if consoleView.center.x < 0 || consoleView.center.x > UIScreen.portraitSize.width {
                 grabberMode = true
@@ -395,6 +394,14 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 }
             }
         }
+    }
+    
+    func snapToCachedEndpoint() {
+        let cachedConsolePosition = CGPoint(x: UserDefaults.standard.object(forKey: "LocalConsole_X") as? CGFloat ?? possibleEndpoints.first!.x,
+                                            y: UserDefaults.standard.object(forKey: "LocalConsole_Y") as? CGFloat ?? possibleEndpoints.first!.y)
+        
+        consoleView.center = cachedConsolePosition // Update console center so possibleEndpoints are calculated correctly.
+        consoleView.center = nearestTargetTo(cachedConsolePosition, possibleTargets: possibleEndpoints)
     }
     
     // MARK: - Public
@@ -469,7 +476,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 }.startAnimation(afterDelay: 0.06)
                 
                 consoleTextView.isUserInteractionEnabled = false
-                hideButton.isHidden = false
+                unhideButton.isHidden = false
                 
             } else {
                 
@@ -491,7 +498,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 }.startAnimation()
                 
                 consoleTextView.isUserInteractionEnabled = true
-                hideButton.isHidden = true
+                unhideButton.isHidden = true
             }
         }
     }

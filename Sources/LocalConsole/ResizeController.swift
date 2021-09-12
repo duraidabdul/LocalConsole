@@ -170,7 +170,7 @@ class ResizeController {
                 LCManager.shared.consoleView.layer.shadowOpacity = 0.5
                 
                 UIViewPropertyAnimator(duration: 0.6, dampingRatio: 1) {
-                    LCManager.shared.consoleView.center = LCManager.shared.possibleEndpoints.first!
+                    LCManager.shared.snapToCachedEndpoint()
                     
                     // Update grabbers (layout constraints)
                     LCManager.shared.consoleWindow?.layoutIfNeeded()
