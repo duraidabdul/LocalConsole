@@ -15,8 +15,8 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     
     public static let shared = LCManager()
     
-    /// Set the font size. The font can be set to a minimum value of 5.0 and a maximum value of 20.0. The default value is 7.5.
-    public var fontSize: CGFloat = 7.5 {
+    /// Set the font size. The font can be set to a minimum value of 5.0 and a maximum value of 20.0. The default value is 8.
+    public var fontSize: CGFloat = 8 {
         didSet {
             guard fontSize >= 4 else { fontSize = 4; return }
             guard fontSize <= 20 else { fontSize = 20; return }
@@ -44,7 +44,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         }
     }
     
-    let defaultConsoleSize = CGSize(width: 228, height: 142)
+    let defaultConsoleSize = CGSize(width: 240, height: 148)
     
     lazy var borderView = UIView()
     
@@ -109,22 +109,22 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             
             // Update text view width.
             if consoleView.frame.size.width > ResizeController.kMaxConsoleWidth {
-                consoleTextView.frame.size.width = ResizeController.kMaxConsoleWidth - 4
+                consoleTextView.frame.size.width = ResizeController.kMaxConsoleWidth - 2
             } else if consoleView.frame.size.width < ResizeController.kMinConsoleWidth {
-                consoleTextView.frame.size.width = ResizeController.kMinConsoleWidth - 4
+                consoleTextView.frame.size.width = ResizeController.kMinConsoleWidth - 2
             } else {
-                consoleTextView.frame.size.width = consoleSize.width - 4
+                consoleTextView.frame.size.width = consoleSize.width - 2
             }
             
             // Update text view height.
             if consoleView.frame.size.height > ResizeController.kMaxConsoleHeight {
-                consoleTextView.frame.size.height = ResizeController.kMaxConsoleHeight - 4
+                consoleTextView.frame.size.height = ResizeController.kMaxConsoleHeight - 2
                 + (consoleView.frame.size.height - ResizeController.kMaxConsoleHeight) * 2 / 3
             } else if consoleView.frame.size.height < ResizeController.kMinConsoleHeight {
-                consoleTextView.frame.size.height = ResizeController.kMinConsoleHeight - 4
+                consoleTextView.frame.size.height = ResizeController.kMinConsoleHeight - 2
                 + (consoleView.frame.size.height - ResizeController.kMinConsoleHeight) * 2 / 3
             } else {
-                consoleTextView.frame.size.height = consoleSize.height - 4
+                consoleTextView.frame.size.height = consoleSize.height - 2
             }
             
             consoleTextView.contentOffset.y = consoleTextView.contentSize.height - consoleTextView.bounds.size.height
@@ -254,7 +254,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         consoleView.layer.shadowOffset = CGSize(width: 0, height: 2)
         consoleView.alpha = 0
         
-        consoleView.layer.cornerRadius = 22
+        consoleView.layer.cornerRadius = 24
         consoleView.layer.cornerCurve = .continuous
         
         let _ = lumaView
@@ -270,10 +270,10 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         consoleView.addSubview(borderView)
         
         // Configure text view.
-        consoleTextView.frame = CGRect(x: 2, y: 2, width: consoleSize.width - 4, height: consoleSize.height - 4)
+        consoleTextView.frame = CGRect(x: 1, y: 1, width: consoleSize.width - 2, height: consoleSize.height - 2)
         consoleTextView.isEditable = false
         consoleTextView.backgroundColor = .clear
-        consoleTextView.textContainerInset = UIEdgeInsets(top: 10, left: 8, bottom: 10, right: 8)
+        consoleTextView.textContainerInset = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
         
         consoleTextView.isSelectable = false
         consoleTextView.showsVerticalScrollIndicator = false
@@ -297,7 +297,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         consoleView.addGestureRecognizer(longPressRecognizer)
         
         // Prepare menu button.
-        let diameter = CGFloat(28)
+        let diameter = CGFloat(30)
         
         // This tuned button frame is used to adjust where the menu appears.
         menuButton = UIButton(frame: CGRect(x: consoleView.bounds.width - 44,
@@ -318,7 +318,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         menuButton.addSubview(circle)
         
         let ellipsisImage = UIImageView(image: UIImage(systemName: "ellipsis",
-                                                       withConfiguration: UIImage.SymbolConfiguration(pointSize: 17, weight: .medium)))
+                                                       withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)))
         ellipsisImage.frame.size = circle.bounds.size
         ellipsisImage.contentMode = .center
         circle.addSubview(ellipsisImage)
@@ -413,9 +413,11 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             if isVisible {
                 
                 if !isConsoleConfigured {
-                    configureWindow()
-                    configureConsole()
-                    isConsoleConfigured = true
+                    DispatchQueue.main.async { [self] in
+                        configureWindow()
+                        configureConsole()
+                        isConsoleConfigured = true
+                    }
                 }
                 
                 commitTextChanges(requestMenuUpdate: true)
@@ -911,7 +913,9 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
             if !grabberMode {
                 consoleTextView.alpha = 1
-                menuButton.alpha = 1
+                if !ResizeController.shared.isActive {
+                    menuButton.alpha = 1
+                }
             }
         }.startAnimation()
     }
