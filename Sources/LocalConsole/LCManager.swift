@@ -834,9 +834,13 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         }
     }
     
+    let consolePiPPanner_frameRateRequest = FrameRateRequest()
+    
     @objc func consolePiPPanner(recognizer: UIPanGestureRecognizer) {
         
         if recognizer.state == .began {
+            consolePiPPanner_frameRateRequest.isActive = true
+            
             initialViewLocation = consoleView.center
         }
         
@@ -860,6 +864,9 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             }
             
         case .ended, .cancelled:
+            
+            consolePiPPanner_frameRateRequest.isActive = true
+            FrameRateRequest().perform(duration: 0.5)
             
             // After the PiP is thrown, determine the best corner and re-target it there.
             let decelerationRate = UIScrollView.DecelerationRate.normal.rawValue
@@ -1114,4 +1121,54 @@ extension TimeInterval {
 
 fileprivate func _debugPrint(_ items: Any) {
     print(items)
+}
+
+// MARK: Frame Rate Request
+/**
+An object that allows you to manually request an increased display refresh rate on ProMotion devices.
+
+*The display refresh rate does not exceed 60 Hz when low power mode is enabled.*
+
+**Do not set an excessive duration. Doing so will negatively impact battery life.**
+ 
+```
+// Example
+let request = FrameRateRequest(preferredFrameRate: 120,
+                               duration: 0.4)
+request.perform()
+```
+ */
+class FrameRateRequest {
+    
+    lazy private var displayLink = CADisplayLink(target: self, selector: #selector(dummyFunction))
+    
+    var isActive: Bool = false {
+        didSet {
+            guard #available(iOS 15, *) else { return }
+            guard isActive != oldValue else { return }
+            
+            if isActive {
+                displayLink.add(to: .current, forMode: .common)
+            } else {
+                displayLink.remove(from: .current, forMode: .common)
+            }
+        }
+    }
+    
+    /// Prepares your frame rate request parameters.
+    init(preferredFrameRate: Float = Float(UIScreen.main.maximumFramesPerSecond)) {
+        if #available(iOS 15, *) {
+            displayLink.preferredFrameRateRange = CAFrameRateRange(minimum: 30, maximum: Float(UIScreen.main.maximumFramesPerSecond), preferred: preferredFrameRate)
+        }
+    }
+    
+    /// Perform frame rate request.
+    func perform(duration: Double) {
+        isActive = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [self] in
+            isActive = false
+        }
+    }
+    
+    @objc private func dummyFunction() {}
 }

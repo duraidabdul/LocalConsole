@@ -115,6 +115,8 @@ class ResizeController {
             // Ensure initial autolayout is performed unanimated.
             LCManager.shared.consoleWindow?.layoutIfNeeded()
             
+            FrameRateRequest().perform(duration: 1.5)
+            
             if isActive {
                 
                 UIViewPropertyAnimator(duration: 0.75, dampingRatio: 1) {
@@ -201,6 +203,8 @@ class ResizeController {
     static let kMinConsoleHeight: CGFloat = 108
     static let kMaxConsoleHeight: CGFloat = 346
     
+    let verticalPanner_frameRateRequest = FrameRateRequest()
+    
     @objc func verticalPanner(recognizer: UIPanGestureRecognizer) {
         
         let translation = recognizer.translation(in: bottomGrabber.superview)
@@ -210,6 +214,8 @@ class ResizeController {
         
         switch recognizer.state {
         case .began:
+            verticalPanner_frameRateRequest.isActive = true
+            
             initialHeight = LCManager.shared.consoleSize.height
             
             UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
@@ -241,6 +247,10 @@ class ResizeController {
             LCManager.shared.consoleView.center.y = consoleCenterPoint.y
             
         case .ended, .cancelled:
+            verticalPanner_frameRateRequest.isActive = false
+            
+            FrameRateRequest().perform(duration: 0.4)
+            
             UIViewPropertyAnimator(duration: 0.4, dampingRatio: 0.7) {
                 if LCManager.shared.consoleSize.height > maxHeight {
                     LCManager.shared.consoleSize.height = maxHeight
@@ -270,6 +280,8 @@ class ResizeController {
     static let kMinConsoleWidth: CGFloat = 112
     static let kMaxConsoleWidth: CGFloat = UIScreen.portraitSize.width - 56
     
+    let horizontalPanner_frameRateRequest = FrameRateRequest()
+    
     @objc func horizontalPanner(recognizer: UIPanGestureRecognizer) {
         
         let translation = recognizer.translation(in: bottomGrabber.superview)
@@ -279,6 +291,8 @@ class ResizeController {
         
         switch recognizer.state {
         case .began:
+            horizontalPanner_frameRateRequest.isActive = true
+            
             initialWidth = LCManager.shared.consoleSize.width
             
             UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
@@ -309,6 +323,10 @@ class ResizeController {
             LCManager.shared.consoleView.center.x = (UIScreen.main.nativeBounds.width * 1/2).rounded() / UIScreen.main.scale
             
         case .ended, .cancelled:
+            
+            horizontalPanner_frameRateRequest.isActive = false
+            
+            FrameRateRequest().perform(duration: 0.4)
             
             UIViewPropertyAnimator(duration: 0.4, dampingRatio: 0.7) {
                 if LCManager.shared.consoleSize.width > maxWidth {
