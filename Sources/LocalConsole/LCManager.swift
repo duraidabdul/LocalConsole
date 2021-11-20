@@ -865,7 +865,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             
         case .ended, .cancelled:
             
-            consolePiPPanner_frameRateRequest.isActive = true
+            consolePiPPanner_frameRateRequest.isActive = false
             FrameRateRequest().perform(duration: 0.5)
             
             // After the PiP is thrown, determine the best corner and re-target it there.
