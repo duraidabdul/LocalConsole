@@ -139,12 +139,14 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     /// Strong reference keeps the window alive.
     var consoleWindow: ConsoleWindow?
     
-    // The console needs a parent view controller in order to display context menus.
-    lazy var viewController = UIViewController()
-    lazy var consoleView = viewController.view!
+    /// Enables rotation.
+    lazy var viewController = ConsoleViewController()
+    
+    /// Note: The console always needs a parent view controller in order to display context menus. In this case, the parent controller will be the viewController.
+    lazy var consoleView = UIView()
     
     /// Text view that displays printed items.
-    lazy var consoleTextView = InvertedTextView()
+    lazy var consoleTextView = InvertedTextView() 
     
     /// Button that reveals menu.
     lazy var menuButton = UIButton()
@@ -161,22 +163,38 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     /// Gesture endpoints. Each point represents a corner of the screen. TODO: Handle screen rotation.
     var possibleEndpoints: [CGPoint] {
         
-        if consoleSize.width < UIScreen.portraitSize.width - 112 {
+        let screenSize = viewController.view.frame.size
+        
+        // Must check for portrait mode manually here. UIDevice was reporting orientation incorrectly before.
+        let isPortraitNotchedPhone = UIDevice.current.hasNotch && viewController.view.frame.size.width < viewController.view.frame.size.height
+        
+        // Fix incorrect reported orientation on phone.
+        let isLandscapePhone = (UIDevice.current.orientation == .landscapeLeft || UIDevice.current.orientation == .landscapeRight) && UIDevice.current.userInterfaceIdiom == .phone
+        
+        let isLandscapeLeftNotchedPhone = UIDevice.current.orientation == .landscapeLeft
+        && UIDevice.current.userInterfaceIdiom == .phone
+        && UIDevice.current.hasNotch
+        
+        let isLandscapeRightNotchedPhone = UIDevice.current.orientation == .landscapeRight
+        && UIDevice.current.userInterfaceIdiom == .phone
+        && UIDevice.current.hasNotch
+        
+        if consoleSize.width < screenSize.width - 112 {
             
             // Four endpoints, one for each corner.
             var endpoints = [
                 
                 // Top endpoints.
-                CGPoint(x: consoleSize.width / 2 + 12,
-                        y: (UIScreen.hasRoundedCorners ? 38 : 16) + consoleSize.height / 2 + 12),
-                CGPoint(x: UIScreen.portraitSize.width - consoleSize.width / 2 - 12,
-                        y: (UIScreen.hasRoundedCorners ? 38 : 16) + consoleSize.height / 2 + 12),
+                CGPoint(x: consoleSize.width / 2 + 12 + (isLandscapeLeftNotchedPhone ? 40 : isLandscapePhone ? 12 : 0),
+                        y: (isPortraitNotchedPhone ? 38 : isLandscapePhone ? 0 : 16) + consoleSize.height / 2 + 12),
+                CGPoint(x: screenSize.width - consoleSize.width / 2 - 12 - (isLandscapeRightNotchedPhone ? 40 : isLandscapePhone ? 12 : 0),
+                        y: (isPortraitNotchedPhone ? 38 : isLandscapePhone ? 0 : 16) + consoleSize.height / 2 + 12),
                 
                 // Bottom endpoints.
-                CGPoint(x: consoleSize.width / 2 + 12,
-                        y: UIScreen.portraitSize.height - consoleSize.height / 2 - (keyboardHeight ?? consoleWindow?.safeAreaInsets.bottom ?? 0) - 12),
-                CGPoint(x: UIScreen.portraitSize.width - consoleSize.width / 2 - 12,
-                        y: UIScreen.portraitSize.height - consoleSize.height / 2 - (keyboardHeight ?? consoleWindow?.safeAreaInsets.bottom ?? 0) - 12)]
+                CGPoint(x: consoleSize.width / 2 + 12 + (isLandscapeLeftNotchedPhone ? 40 : isLandscapePhone ? 12 : 0),
+                        y: screenSize.height - consoleSize.height / 2 - (keyboardHeight ?? consoleWindow?.safeAreaInsets.bottom ?? 0) - 12),
+                CGPoint(x: screenSize.width - consoleSize.width / 2 - 12 - (isLandscapeRightNotchedPhone ? 40 : isLandscapePhone ? 12 : 02),
+                        y: screenSize.height - consoleSize.height / 2 - (keyboardHeight ?? consoleWindow?.safeAreaInsets.bottom ?? 0) - 12)]
             
             if consoleView.frame.minX <= 0 {
                 
@@ -184,25 +202,29 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 endpoints = [endpoints[0], endpoints[2]]
                 
                 // Left edge hiding endpoints.
-                if consoleView.center.y < (UIScreen.portraitSize.height - (temporaryKeyboardHeightValueTracker ?? 0)) / 2 {
-                    endpoints.append(CGPoint(x: -consoleSize.width / 2 + 28,
-                                             y: endpoints[0].y))
-                } else {
-                    endpoints.append(CGPoint(x: -consoleSize.width / 2 + 28,
-                                             y: endpoints[1].y))
+                if !isLandscapeLeftNotchedPhone {
+                    if consoleView.center.y < (screenSize.height - (temporaryKeyboardHeightValueTracker ?? 0)) / 2 {
+                        endpoints.append(CGPoint(x: -consoleSize.width / 2 + 28,
+                                                 y: endpoints[0].y))
+                    } else {
+                        endpoints.append(CGPoint(x: -consoleSize.width / 2 + 28,
+                                                 y: endpoints[1].y))
+                    }
                 }
-            } else if consoleView.frame.maxX >= UIScreen.portraitSize.width {
+            } else if consoleView.frame.maxX >= screenSize.width {
                 
                 // Right edge endpoints.
                 endpoints = [endpoints[1], endpoints[3]]
                 
                 // Right edge hiding endpoints.
-                if consoleView.center.y < (UIScreen.portraitSize.height - (temporaryKeyboardHeightValueTracker ?? 0)) / 2 {
-                    endpoints.append(CGPoint(x: UIScreen.portraitSize.width + consoleSize.width / 2 - 28,
-                                             y: endpoints[0].y))
-                } else {
-                    endpoints.append(CGPoint(x: UIScreen.portraitSize.width + consoleSize.width / 2 - 28,
-                                             y: endpoints[1].y))
+                if !isLandscapeRightNotchedPhone {
+                    if consoleView.center.y < (screenSize.height - (temporaryKeyboardHeightValueTracker ?? 0)) / 2 {
+                        endpoints.append(CGPoint(x: screenSize.width + consoleSize.width / 2 - 28,
+                                                 y: endpoints[0].y))
+                    } else {
+                        endpoints.append(CGPoint(x: screenSize.width + consoleSize.width / 2 - 28,
+                                                 y: endpoints[1].y))
+                    }
                 }
             }
             
@@ -211,29 +233,29 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         } else {
             
             // Two endpoints, one for the top, one for the bottom..
-            var endpoints = [CGPoint(x: UIScreen.portraitSize.width / 2,
+            var endpoints = [CGPoint(x: screenSize.width / 2,
                                      y: (UIScreen.hasRoundedCorners ? 38 : 16) + consoleSize.height / 2 + 12),
-                             CGPoint(x: UIScreen.portraitSize.width / 2,
-                                     y: UIScreen.portraitSize.height - consoleSize.height / 2 - (keyboardHeight ?? consoleWindow?.safeAreaInsets.bottom ?? 0) - 12)]
+                             CGPoint(x: screenSize.width / 2,
+                                     y: screenSize.height - consoleSize.height / 2 - (keyboardHeight ?? consoleWindow?.safeAreaInsets.bottom ?? 0) - 12)]
             
             if consoleView.frame.minX <= 0 {
                 
                 // Left edge hiding endpoints.
-                if consoleView.center.y < (UIScreen.portraitSize.height - (temporaryKeyboardHeightValueTracker ?? 0)) / 2 {
+                if consoleView.center.y < (screenSize.height - (temporaryKeyboardHeightValueTracker ?? 0)) / 2 {
                     endpoints.append(CGPoint(x: -consoleSize.width / 2 + 28,
                                              y: endpoints[0].y))
                 } else {
                     endpoints.append(CGPoint(x: -consoleSize.width / 2 + 28,
                                              y: endpoints[1].y))
                 }
-            } else if consoleView.frame.maxX >= UIScreen.portraitSize.width {
+            } else if consoleView.frame.maxX >= screenSize.width {
                 
                 // Right edge hiding endpoints.
-                if consoleView.center.y < (UIScreen.portraitSize.height - (temporaryKeyboardHeightValueTracker ?? 0)) / 2 {
-                    endpoints.append(CGPoint(x: UIScreen.portraitSize.width + consoleSize.width / 2 - 28,
+                if consoleView.center.y < (screenSize.height - (temporaryKeyboardHeightValueTracker ?? 0)) / 2 {
+                    endpoints.append(CGPoint(x: screenSize.width + consoleSize.width / 2 - 28,
                                              y: endpoints[0].y))
                 } else {
-                    endpoints.append(CGPoint(x: UIScreen.portraitSize.width + consoleSize.width / 2 - 28,
+                    endpoints.append(CGPoint(x: screenSize.width + consoleSize.width / 2 - 28,
                                              y: endpoints[1].y))
                 }
             }
@@ -342,7 +364,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         func updateConsoleOrigin() {
             snapToCachedEndpoint()
             
-            if consoleView.center.x < 0 || consoleView.center.x > UIScreen.portraitSize.width {
+            if consoleView.center.x < 0 || consoleView.center.x > viewController.view.frame.size.width {
                 grabberMode = true
                 scrollLocked = !grabberMode
                 
@@ -368,7 +390,12 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 consoleWindow?.frame = UIScreen.main.bounds
                 consoleWindow?.windowLevel = UIWindow.Level.statusBar
                 consoleWindow?.isHidden = false
-                consoleWindow?.addSubview(consoleView)
+                
+                viewController = ConsoleViewController()
+                
+                consoleWindow?.rootViewController = viewController
+                
+                viewController.view.addSubview(consoleView)
                 
                 UIWindow.swizzleStatusBarAppearanceOverride
                 
@@ -536,8 +563,6 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             
             if consoleView.center != possibleEndpoints[0] && consoleView.center != possibleEndpoints[1] {
                 let nearestTargetPosition = nearestTargetTo(consoleView.center, possibleTargets: possibleEndpoints.suffix(2))
-                
-                Swift.print(possibleEndpoints.suffix(2))
                 
                 UIViewPropertyAnimator(duration: 0.55, dampingRatio: 1) {
                     self.consoleView.center = nearestTargetPosition
@@ -710,6 +735,14 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             }
         })
         
+        // If device is phone in landscape, disable resize controller.
+        if UIDevice.current.userInterfaceIdiom == .phone && viewController.view.frame.width > viewController.view.frame.height {
+            resize.attributes = .disabled
+            if #available(iOS 15, *) {
+                resize.subtitle = "Portrait Orientation Only"
+            }
+        }
+        
         let clear = UIAction(title: "Clear Console",
                              image: UIImage(systemName: "xmark.square"), handler: { _ in
             self.clear()
@@ -857,11 +890,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                                              y: initialViewLocation.y + translation.y)
             }.startAnimation()
             
-            if consoleView.frame.maxX > 30 && consoleView.frame.minX < UIScreen.portraitSize.width - 30 {
-                grabberMode = false
-            } else {
-                grabberMode = true
-            }
+            reassessGrabberMode()
             
         case .ended, .cancelled:
             
@@ -894,11 +923,19 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             UserDefaults.standard.set(nearestTargetPosition.y, forKey: "LocalConsole_Y")
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                self.grabberMode = nearestTargetPosition.x < 0 || nearestTargetPosition.x > UIScreen.portraitSize.width
+                self.reassessGrabberMode()
                 self.scrollLocked = !self.grabberMode
             }
             
         default: break
+        }
+    }
+    
+    func reassessGrabberMode() {
+        if consoleView.frame.maxX > 30 && consoleView.frame.minX < viewController.view.frame.size.width - 30 {
+            grabberMode = false
+        } else {
+            grabberMode = true
         }
     }
     
@@ -1111,6 +1148,12 @@ class InvertedTextView: UITextView {
     }
 }
 
+extension UIDevice {
+    var hasNotch: Bool {
+        return UIApplication.shared.windows[0].safeAreaInsets.bottom > 0
+    }
+}
+
 extension TimeInterval {
     var formattedString: String? {
         let formatter = DateComponentsFormatter()
@@ -1121,6 +1164,65 @@ extension TimeInterval {
 
 fileprivate func _debugPrint(_ items: Any) {
     print(items)
+}
+
+// Support for auto-rotate.
+class ConsoleViewController: UIViewController {
+    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+        
+        // Cancel the panner console is being panned to allow for location manipulation.
+        [LCManager.shared.panRecognizer, LCManager.shared.longPressRecognizer].forEach {
+            $0.isEnabled.toggle(); $0.isEnabled.toggle()
+        }
+        
+        if UIDevice.current.userInterfaceIdiom != .pad && ResizeController.shared.isActive {
+            ResizeController.shared.isActive = false
+            ResizeController.shared.platterView.dismiss()
+        }
+        
+        if UIDevice.current.userInterfaceIdiom == .pad && ResizeController.shared.isActive {
+            DispatchQueue.main.async {
+                UIViewPropertyAnimator(duration: 0.6, dampingRatio: 1) {
+                    LCManager.shared.consoleView.center = ResizeController.shared.consoleCenterPoint
+                }.startAnimation(afterDelay: 0.05)
+            }
+            
+        } else {
+            let consoleView = LCManager.shared.consoleView
+            let oldSize = LCManager.shared.viewController.view.frame.size
+            
+            let targetLocationEstimate: CGPoint = {
+                var xPosition = consoleView.center.x
+                var yPosition = consoleView.center.y
+                
+                if consoleView.center.x > oldSize.width / 2 {
+                    xPosition += size.width - oldSize.width
+                }
+                
+                if consoleView.center.y > oldSize.height / 2 {
+                    yPosition += size.height - oldSize.height
+                }
+                
+                return CGPoint(x: xPosition, y: yPosition)
+            }()
+            
+            UIViewPropertyAnimator(duration: 0.6, dampingRatio: 1) {
+                consoleView.center = targetLocationEstimate
+            }.startAnimation(afterDelay: 0.05)
+            
+            DispatchQueue.main.async {
+                // Update portrait orientation menu option for resize controller.
+                LCManager.shared.menuButton.menu = LCManager.shared.makeMenu()
+                
+                // Reassess center of console based on target location estimate.
+                UIViewPropertyAnimator(duration: 0.6, dampingRatio: 1) {
+                    consoleView.center = nearestTargetTo(consoleView.center, possibleTargets: LCManager.shared.possibleEndpoints)
+                }.startAnimation(afterDelay: 0.05)
+                
+                LCManager.shared.reassessGrabberMode()
+            }
+        }
+    }
 }
 
 // MARK: Frame Rate Request

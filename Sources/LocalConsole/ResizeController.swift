@@ -14,9 +14,13 @@ class ResizeController {
     
     lazy var platterView = PlatterView(frame: .zero)
     
-    lazy var consoleCenterPoint = CGPoint(x: (UIScreen.main.nativeBounds.width / 2).rounded() / UIScreen.main.scale,
-                                          y: (UIScreen.main.nativeBounds.height / 2).rounded() / UIScreen.main.scale
-                                            + (UIScreen.hasRoundedCorners ? 0 : 24))
+    var consoleCenterPoint: CGPoint {
+        let containerViewSize = LCManager.shared.viewController.view.frame.size
+        
+        return CGPoint(x: (containerViewSize.width * UIScreen.main.scale / 2).rounded() / UIScreen.main.scale,
+                       y: (containerViewSize.height * UIScreen.main.scale / 2).rounded() / UIScreen.main.scale
+                         + (UIScreen.hasRoundedCorners ? 0 : 24))
+    }
     
     lazy var consoleOutlineView: UIView = {
         
@@ -278,7 +282,7 @@ class ResizeController {
     var initialWidth = CGFloat.zero
     
     static let kMinConsoleWidth: CGFloat = 112
-    static let kMaxConsoleWidth: CGFloat = UIScreen.portraitSize.width - 56
+    static let kMaxConsoleWidth: CGFloat = [UIScreen.portraitSize.width, UIScreen.portraitSize.height].min()! - 56
     
     let horizontalPanner_frameRateRequest = FrameRateRequest()
     
@@ -357,12 +361,6 @@ class PlatterView: UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
         
-        self.frame.size = UIScreen.portraitSize
-        // Make sure bottom doesn't show on upwards pan.
-        self.frame.size.height += 50
-        self.frame.origin = possibleEndpoints[1]
-        autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        
         layer.shadowRadius = 10
         layer.shadowOpacity = 0.125
         layer.shadowOffset = CGSize(width: 0, height: 0)
@@ -379,11 +377,12 @@ class PlatterView: UIView {
         blurView.clipsToBounds = true
         
         blurView.frame = bounds
+        blurView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         
         addSubview(blurView)
         
-        LCManager.shared.consoleWindow?.addSubview(self)
-        LCManager.shared.consoleWindow?.sendSubviewToBack(self)
+        LCManager.shared.viewController.view.addSubview(self)
+        LCManager.shared.viewController.view.sendSubviewToBack(self)
         
         _ = backgroundButton
         
@@ -394,7 +393,7 @@ class PlatterView: UIView {
         let grabber = UIView()
         grabber.frame.size = CGSize(width: 36, height: 5)
         grabber.frame.origin.y = 10
-        grabber.center.x = bounds.width / 2
+        grabber.autoresizingMask = [.flexibleLeftMargin, .flexibleRightMargin]
         grabber.backgroundColor = .label
         grabber.alpha = 0.1
         grabber.layer.cornerRadius = 2.5
@@ -405,9 +404,8 @@ class PlatterView: UIView {
         titleLabel.text = "Resize Console"
         titleLabel.font = .systemFont(ofSize: 30, weight: .bold)
         titleLabel.sizeToFit()
-        titleLabel.center.x = bounds.width / 2
         titleLabel.frame.origin.y = 28
-        titleLabel.roundOriginToPixel()
+        titleLabel.autoresizingMask = [.flexibleLeftMargin, .flexibleRightMargin]
         addSubview(titleLabel)
         
         let subtitleLabel = UILabel()
@@ -415,20 +413,36 @@ class PlatterView: UIView {
         subtitleLabel.font = .systemFont(ofSize: 17, weight: .medium)
         subtitleLabel.sizeToFit()
         subtitleLabel.alpha = 0.5
-        subtitleLabel.center.x = bounds.width / 2
         subtitleLabel.frame.origin.y = titleLabel.frame.maxY + 8
-        subtitleLabel.roundOriginToPixel()
+        subtitleLabel.autoresizingMask = [.flexibleLeftMargin, .flexibleRightMargin]
         addSubview(subtitleLabel)
         
-        addSubview(resetButton)
-        resetButton.center = CGPoint(x: UIScreen.portraitSize.width / 2 - 74,
-                                     y: UIScreen.portraitSize.height - possibleEndpoints[0].y * 2)
-        resetButton.roundOriginToPixel()
+        let buttonContainerView = UIView()
+        buttonContainerView.addSubview(resetButton)
+        buttonContainerView.addSubview(doneButton)
+        addSubview(buttonContainerView)
         
-        addSubview(doneButton)
-        doneButton.center = CGPoint(x: UIScreen.portraitSize.width / 2 + 74,
-                                    y: UIScreen.portraitSize.height - possibleEndpoints[0].y * 2)
-        doneButton.roundOriginToPixel()
+        buttonContainerView.translatesAutoresizingMaskIntoConstraints = false
+        resetButton.translatesAutoresizingMaskIntoConstraints = false
+        doneButton.translatesAutoresizingMaskIntoConstraints = false
+        
+        NSLayoutConstraint.activate([
+            
+            buttonContainerView.widthAnchor.constraint(equalToConstant: 264),
+            buttonContainerView.heightAnchor.constraint(equalToConstant: 52),
+            buttonContainerView.centerXAnchor.constraint(equalTo: centerXAnchor),
+            buttonContainerView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -possibleEndpoints[0].y * 2),
+            
+            resetButton.widthAnchor.constraint(equalToConstant: 116),
+            resetButton.heightAnchor.constraint(equalToConstant: 52),
+            resetButton.leadingAnchor.constraint(equalTo: buttonContainerView.leadingAnchor),
+            resetButton.topAnchor.constraint(equalTo: buttonContainerView.topAnchor),
+            
+            doneButton.widthAnchor.constraint(equalToConstant: 116),
+            doneButton.heightAnchor.constraint(equalToConstant: 52),
+            doneButton.trailingAnchor.constraint(equalTo: buttonContainerView.trailingAnchor),
+            doneButton.topAnchor.constraint(equalTo: buttonContainerView.topAnchor)
+        ])
     }
     
     lazy var backgroundButton: UIButton = {
@@ -448,7 +462,6 @@ class PlatterView: UIView {
         button.setTitle("Done", for: .normal)
         button.setTitleColor(.white, for: .normal)
         button.titleLabel?.font = .systemFont(ofSize: 17, weight: .medium)
-        button.frame.size = CGSize(width: 116, height: 52)
         button.layer.cornerRadius = 20
         button.layer.cornerCurve = .continuous
         
@@ -483,7 +496,6 @@ class PlatterView: UIView {
         button.setTitle("Reset", for: .normal)
         button.setTitleColor(.label, for: .normal)
         button.titleLabel?.font = .systemFont(ofSize: 17, weight: .medium)
-        button.frame.size = CGSize(width: 116, height: 52)
         button.layer.cornerRadius = 20
         button.layer.cornerCurve = .continuous
         
@@ -516,18 +528,35 @@ class PlatterView: UIView {
         return button
     }()
     
+    func configureFrame() {
+        self.frame.size = LCManager.shared.viewController.view.frame.size
+        // Make sure bottom doesn't show on upwards pan.
+        self.frame.size.height += 50
+        self.frame.origin = possibleEndpoints[1]
+        autoresizingMask = [.flexibleWidth, .flexibleHeight]
+    }
+    
     func reveal() {
+        
+        configureFrame()
+        
         UIViewPropertyAnimator(duration: 0.6, dampingRatio: 1) {
             self.frame.origin = self.possibleEndpoints[0]
         }.startAnimation()
         
         backgroundButton.isHidden = false
+        
+        isHidden = false
     }
     
     func dismiss() {
-        UIViewPropertyAnimator(duration: 0.6, dampingRatio: 1) {
+        let animator = UIViewPropertyAnimator(duration: 0.6, dampingRatio: 1) {
             self.frame.origin = self.possibleEndpoints[1]
-        }.startAnimation()
+        }
+        animator.addCompletion { _ in
+            self.isHidden = true
+        }
+        animator.startAnimation()
         
         backgroundButton.isHidden = true
     }
@@ -548,7 +577,9 @@ class PlatterView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
     
-    lazy var possibleEndpoints = [CGPoint(x: 0, y: (UIScreen.hasRoundedCorners ? 44 : -8) + 63), CGPoint(x: 0, y: UIScreen.portraitSize.height + 5)]
+    var possibleEndpoints: [CGPoint] { return [CGPoint(x: 0, y: (UIScreen.hasRoundedCorners ? 44 : -8) + 63),
+                                               CGPoint(x: 0, y: LCManager.shared.viewController.view.frame.size.height + 5)]
+    }
     
     var initialPlatterOriginY = CGFloat.zero
     
@@ -630,14 +661,19 @@ class PlatterView: UIView {
                     $0.transform = .identity
                 }
             }
-            positionAnimator.startAnimation()
             
             if nearestTargetPosition == possibleEndpoints[1] {
                 ResizeController.shared.isActive = false
                 backgroundButton.isHidden = true
+                
+                positionAnimator.addCompletion { _ in
+                    self.isHidden = true
+                }
             } else {
                 ResizeController.shared.isActive = true
             }
+            
+            positionAnimator.startAnimation()
             
         default: break
         }
