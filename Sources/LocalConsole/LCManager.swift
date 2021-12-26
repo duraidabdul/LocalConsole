@@ -391,7 +391,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 consoleWindow?.windowLevel = UIWindow.Level.statusBar
                 consoleWindow?.isHidden = false
                 
-                viewController = ConsoleViewController()
+                viewController.view = PassthroughView()
                 
                 consoleWindow?.rootViewController = viewController
                 
@@ -995,6 +995,18 @@ class ConsoleWindow: UIWindow {
     }
 }
 
+// Custom view for the console to appear above other windows while passing touches down.
+class PassthroughView: UIView {
+    
+    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        
+        if let hitView = super.hitTest(point, with: event) {
+            return hitView.isKind(of: PassthroughView.self) ? nil : hitView
+        }
+        return super.hitTest(point, with: event)
+    }
+}
+
 
 import UIKit.UIGestureRecognizerSubclass
 
@@ -1168,6 +1180,8 @@ fileprivate func _debugPrint(_ items: Any) {
 
 // Support for auto-rotate.
 class ConsoleViewController: UIViewController {
+    
+    
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
         
         // Cancel the panner console is being panned to allow for location manipulation.
