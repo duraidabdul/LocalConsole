@@ -21,7 +21,7 @@ let consoleManager = LCManager.shared
 ```
 
 ## **Usage**
-Once prepared, the localConsole can be used throughout your project.
+Once prepared, the consoleManager can be used throughout your project.
 ```swift
 
 // Activate the console view.
