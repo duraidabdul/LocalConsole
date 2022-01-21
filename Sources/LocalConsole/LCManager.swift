@@ -534,10 +534,20 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     
     /// Print items to the console view.
     public func print(_ items: Any) {
-        if currentText == "" {
-            currentText = "\(items)"
+        let _currentText: String = {
+            if currentText == "" {
+                return "\(items)"
+            } else {
+                return currentText + "\n\(items)"
+            }
+        }()
+        
+        // Cut down string if it exceeds 300,000 characters to keep text view running smoothly.
+        if _currentText.count > 300000 {
+            let shortenedString = String(_currentText.suffix(300000))
+            currentText = shortenedString.stringAfterFirstOccurenceOf(delimiter: "\n") ?? shortenedString
         } else {
-            currentText = currentText + "\n\(items)"
+            currentText = _currentText
         }
     }
     
@@ -1134,7 +1144,7 @@ class InvertedTextView: UITextView {
     
     var pendingOffsetChange = false
     
-    // Thanks to WWDC21 Lab!
+    // Thanks to WWDC21 UIKit Lab!
     override func layoutSubviews() {
         super.layoutSubviews()
         
@@ -1163,6 +1173,14 @@ class InvertedTextView: UITextView {
 extension UIDevice {
     var hasNotch: Bool {
         return UIApplication.shared.windows[0].safeAreaInsets.bottom > 0
+    }
+}
+
+extension String {
+    func stringAfterFirstOccurenceOf(delimiter: String) -> String? {
+       guard let upperIndex = (self.range(of: delimiter)?.upperBound) else { return nil }
+       let trailingString: String = .init(self.suffix(from: upperIndex))
+       return trailingString
     }
 }
 
