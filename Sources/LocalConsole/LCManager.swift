@@ -552,7 +552,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             
             if !hasShortened && !isCharacterLimitWarningDisabled {
                 hasShortened = true
-                Swift.print("LocalConsole's content has exceeded 50,000 characters.\nTo maintain performance, LCManager cuts down the beginning of the printed content. To disable this behaviour, set LCManager.isCharacterLimitDisabled to true.\nTo disable this warning, set LCManager.isCharacterLimitWarningDisabled to true.")
+                Swift.print("LocalConsole's content has exceeded 50,000 characters.\nTo maintain performance, LCManager cuts down the beginning of the printed content. To disable this behaviour, set LCManager.shared.isCharacterLimitDisabled to true.\nTo disable this warning, set LCManager.shared.isCharacterLimitWarningDisabled = true.")
                 
             }
             
