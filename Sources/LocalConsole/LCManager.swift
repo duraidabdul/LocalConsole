@@ -532,6 +532,11 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         }
     }
     
+    var hasShortened = false
+    
+    public var isCharacterLimitDisabled = false
+    public var isCharacterLimitWarningDisabled = false
+    
     /// Print items to the console view.
     public func print(_ items: Any) {
         let _currentText: String = {
@@ -542,9 +547,16 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             }
         }()
         
-        // Cut down string if it exceeds 300,000 characters to keep text view running smoothly.
-        if _currentText.count > 300000 {
-            let shortenedString = String(_currentText.suffix(300000))
+        // Cut down string if it exceeds 50,000 characters to keep text view running smoothly.
+        if _currentText.count > 50000 && !isCharacterLimitDisabled {
+            
+            if !hasShortened && !isCharacterLimitWarningDisabled {
+                hasShortened = true
+                Swift.print("LocalConsole's content has exceeded 50,000 characters.\nTo maintain performance, LCManager cuts down the beginning of the printed content. To disable this behaviour, set LCManager.isCharacterLimitDisabled to true.\nTo disable this warning, set LCManager.isCharacterLimitWarningDisabled to true.")
+                
+            }
+            
+            let shortenedString = String(_currentText.suffix(50000))
             currentText = shortenedString.stringAfterFirstOccurenceOf(delimiter: "\n") ?? shortenedString
         } else {
             currentText = _currentText
@@ -877,12 +889,15 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         }
     }
     
-    let consolePiPPanner_frameRateRequest = FrameRateRequest()
+    var consolePiPPanner_frameRateRequestID: UUID?
     
     @objc func consolePiPPanner(recognizer: UIPanGestureRecognizer) {
         
         if recognizer.state == .began {
-            consolePiPPanner_frameRateRequest.isActive = true
+            if #available(iOS 15, *) {
+                consolePiPPanner_frameRateRequestID = UUID()
+                FrameRateRequest.shared.activate(id: consolePiPPanner_frameRateRequestID!)
+            }
             
             initialViewLocation = consoleView.center
         }
@@ -904,8 +919,12 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             
         case .ended, .cancelled:
             
-            consolePiPPanner_frameRateRequest.isActive = false
-            FrameRateRequest().perform(duration: 0.5)
+            if #available(iOS 15, *), let id = consolePiPPanner_frameRateRequestID {
+                consolePiPPanner_frameRateRequestID = nil
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    FrameRateRequest.shared.deactivate(id: id)
+                }
+            }
             
             // After the PiP is thrown, determine the best corner and re-target it there.
             let decelerationRate = UIScrollView.DecelerationRate.normal.rawValue
@@ -1267,40 +1286,77 @@ An object that allows you to manually request an increased display refresh rate 
  
 ```
 // Example
-let request = FrameRateRequest(preferredFrameRate: 120,
-                               duration: 0.4)
+FrameRateRequest.shared.perform(duration: 0.5)
 request.perform()
 ```
  */
-class FrameRateRequest {
+@available(iOS 15, *)
+final class FrameRateRequest {
+    
+    static let shared = FrameRateRequest()
     
     lazy private var displayLink = CADisplayLink(target: self, selector: #selector(dummyFunction))
     
-    var isActive: Bool = false {
+    private var requestIdentifiers: [UUID] = [] {
         didSet {
-            guard #available(iOS 15, *) else { return }
-            guard isActive != oldValue else { return }
+            isActive = requestIdentifiers.count > 0
+        }
+    }
+    
+    private var isActive: Bool = false {
+        didSet {
+            guard isActive != oldValue, UIScreen.main.maximumFramesPerSecond > 60 else { return }
             
             if isActive {
                 displayLink.add(to: .current, forMode: .common)
             } else {
-                displayLink.remove(from: .current, forMode: .common)
+                displayLink.invalidate()
             }
         }
     }
     
-    /// Prepares your frame rate request parameters.
-    init(preferredFrameRate: Float = Float(UIScreen.main.maximumFramesPerSecond)) {
-        if #available(iOS 15, *) {
-            displayLink.preferredFrameRateRange = CAFrameRateRange(minimum: 30, maximum: Float(UIScreen.main.maximumFramesPerSecond), preferred: preferredFrameRate)
-        }
+    private init() {
+        guard UIScreen.main.maximumFramesPerSecond > 60 else { return }
+        
+        displayLink.preferredFrameRateRange = CAFrameRateRange(minimum: 90, maximum: Float(UIScreen.main.maximumFramesPerSecond), preferred: Float(UIScreen.main.maximumFramesPerSecond))
+        
+        // Ensure the DisplayLink stops when the app enters the background, or else the system will shut high frame rate capabilities until the app is suspended and relaunched.
+        NotificationCenter.default.addObserver(self, selector: #selector(willEnterForeground),
+                                               name: UIApplication.willEnterForegroundNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(didEnterBackground),
+                                               name: UIApplication.didEnterBackgroundNotification, object: nil)
     }
     
     /// Perform frame rate request.
-    func perform(duration: Double) {
-        isActive = true
+    public func perform(duration: Double) {
+
+        guard UIScreen.main.maximumFramesPerSecond > 60 else { return }
+        
+        let id = UUID()
+        
+        requestIdentifiers.append(id)
         DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [self] in
-            isActive = false
+            requestIdentifiers = requestIdentifiers.filter { $0 != id }
+        }
+    }
+    
+    public func activate(id: UUID) {
+        requestIdentifiers.append(id)
+    }
+    
+    public func deactivate(id: UUID) {
+        requestIdentifiers = requestIdentifiers.filter { $0 != id }
+    }
+    
+    @objc private func willEnterForeground() {
+        if isActive {
+            displayLink.add(to: .current, forMode: .common)
+        }
+    }
+    
+    @objc private func didEnterBackground() {
+        if isActive {
+            displayLink.invalidate()
         }
     }
     

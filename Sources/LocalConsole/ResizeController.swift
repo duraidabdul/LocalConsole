@@ -119,7 +119,9 @@ class ResizeController {
             // Ensure initial autolayout is performed unanimated.
             LCManager.shared.consoleWindow?.layoutIfNeeded()
             
-            FrameRateRequest().perform(duration: 1.5)
+            if #available(iOS 15, *) {
+                FrameRateRequest.shared.perform(duration: 1.5)
+            }
             
             if isActive {
                 
@@ -207,7 +209,7 @@ class ResizeController {
     static let kMinConsoleHeight: CGFloat = 108
     static let kMaxConsoleHeight: CGFloat = 346
     
-    let verticalPanner_frameRateRequest = FrameRateRequest()
+    var verticalPanner_frameRateRequestID: UUID?
     
     @objc func verticalPanner(recognizer: UIPanGestureRecognizer) {
         
@@ -218,7 +220,10 @@ class ResizeController {
         
         switch recognizer.state {
         case .began:
-            verticalPanner_frameRateRequest.isActive = true
+            if #available(iOS 15, *) {
+                verticalPanner_frameRateRequestID = UUID()
+                FrameRateRequest.shared.activate(id: verticalPanner_frameRateRequestID!)
+            }
             
             initialHeight = LCManager.shared.consoleSize.height
             
@@ -251,9 +256,13 @@ class ResizeController {
             LCManager.shared.consoleView.center.y = consoleCenterPoint.y
             
         case .ended, .cancelled:
-            verticalPanner_frameRateRequest.isActive = false
-            
-            FrameRateRequest().perform(duration: 0.4)
+           
+            if #available(iOS 15, *), let id = verticalPanner_frameRateRequestID {
+                verticalPanner_frameRateRequestID = nil
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    FrameRateRequest.shared.deactivate(id: id)
+                }
+            }
             
             UIViewPropertyAnimator(duration: 0.4, dampingRatio: 0.7) {
                 if LCManager.shared.consoleSize.height > maxHeight {
@@ -284,7 +293,7 @@ class ResizeController {
     static let kMinConsoleWidth: CGFloat = 112
     static let kMaxConsoleWidth: CGFloat = [UIScreen.portraitSize.width, UIScreen.portraitSize.height].min()! - 56
     
-    let horizontalPanner_frameRateRequest = FrameRateRequest()
+    var horizontalPanner_frameRateRequestID: UUID?
     
     @objc func horizontalPanner(recognizer: UIPanGestureRecognizer) {
         
@@ -295,7 +304,10 @@ class ResizeController {
         
         switch recognizer.state {
         case .began:
-            horizontalPanner_frameRateRequest.isActive = true
+            if #available(iOS 15, *) {
+                horizontalPanner_frameRateRequestID = UUID()
+                FrameRateRequest.shared.activate(id: horizontalPanner_frameRateRequestID!)
+            }
             
             initialWidth = LCManager.shared.consoleSize.width
             
@@ -328,9 +340,12 @@ class ResizeController {
             
         case .ended, .cancelled:
             
-            horizontalPanner_frameRateRequest.isActive = false
-            
-            FrameRateRequest().perform(duration: 0.4)
+            if #available(iOS 15, *), let id = horizontalPanner_frameRateRequestID {
+                horizontalPanner_frameRateRequestID = nil
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    FrameRateRequest.shared.deactivate(id: id)
+                }
+            }
             
             UIViewPropertyAnimator(duration: 0.4, dampingRatio: 0.7) {
                 if LCManager.shared.consoleSize.width > maxWidth {
