@@ -975,8 +975,6 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         }
         menuContent.append(debugMenu)
         
-        
-        
         return UIMenu(title: "", children: menuContent)
     }
     
@@ -999,7 +997,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             
             if !grabberMode { scrollLocked = true }
             
-            UIViewPropertyAnimator(duration: 0.8, dampingRatio: 0.5) { [self] in
+            UIViewPropertyAnimator(duration: 0.8, dampingRatio: 0.6) { [self] in
                 consoleView.transform = .identity
             }.startAnimation()
             
@@ -1096,15 +1094,16 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     func consolePiPTouchDown() {
         guard !grabberMode else { return }
         
-        UIViewPropertyAnimator(duration: 1.25, dampingRatio: 0.5) { [self] in
-            consoleView.transform = .init(scaleX: 0.95, y: 0.95)
+        UIViewPropertyAnimator(duration: 0.75, dampingRatio: 1) { [self] in
+            consoleView.transform = .init(scaleX: 0.97, y: 0.97)
         }.startAnimation()
     }
     
     // Animate touch up.
     func consolePiPTouchUp() {
-        UIViewPropertyAnimator(duration: 0.8, dampingRatio: 0.4) { [self] in
-            consoleView.transform = .init(scaleX: 1, y: 1)
+        
+        UIViewPropertyAnimator(duration: scrollLocked ? 0.4 : 0.7, dampingRatio: scrollLocked ? 1 : 0.45) { [self] in
+            consoleView.transform = .identity
         }.startAnimation()
         
         UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
