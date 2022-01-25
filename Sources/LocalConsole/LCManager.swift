@@ -82,8 +82,8 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             }.startAnimation()
             grabberMode = false
             
-            UserDefaults.standard.set(consoleView.center.x, forKey: "LocalConsole_X")
-            UserDefaults.standard.set(consoleView.center.y, forKey: "LocalConsole_Y")
+            UserDefaults.standard.set(consoleView.center.x, forKey: "LocalConsole.X")
+            UserDefaults.standard.set(consoleView.center.y, forKey: "LocalConsole.Y")
         }), for: .touchUpInside)
         
         consoleView.addSubview(button)
@@ -131,8 +131,8 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             
             // TODO: Snap to nearest position.
             
-            UserDefaults.standard.set(consoleSize.width, forKey: "LocalConsole_Width")
-            UserDefaults.standard.set(consoleSize.height, forKey: "LocalConsole_Height")
+            UserDefaults.standard.set(consoleSize.width, forKey: "LocalConsole.Width")
+            UserDefaults.standard.set(consoleSize.height, forKey: "LocalConsole.Height")
         }
     }
     
@@ -267,8 +267,8 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     lazy var initialViewLocation: CGPoint = .zero
     
     func configureConsole() {
-        consoleSize = CGSize(width: UserDefaults.standard.object(forKey: "LocalConsole_Width") as? CGFloat ?? consoleSize.width,
-                             height: UserDefaults.standard.object(forKey: "LocalConsole_Height") as? CGFloat ?? consoleSize.height)
+        consoleSize = CGSize(width: UserDefaults.standard.object(forKey: "LocalConsole.Width") as? CGFloat ?? consoleSize.width,
+                             height: UserDefaults.standard.object(forKey: "LocalConsole.Height") as? CGFloat ?? consoleSize.height)
         
         
         consoleView.layer.shadowRadius = 16
@@ -424,8 +424,8 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     }
     
     func snapToCachedEndpoint() {
-        let cachedConsolePosition = CGPoint(x: UserDefaults.standard.object(forKey: "LocalConsole_X") as? CGFloat ?? possibleEndpoints.first!.x,
-                                            y: UserDefaults.standard.object(forKey: "LocalConsole_Y") as? CGFloat ?? possibleEndpoints.first!.y)
+        let cachedConsolePosition = CGPoint(x: UserDefaults.standard.object(forKey: "LocalConsole.X") as? CGFloat ?? possibleEndpoints.first!.x,
+                                            y: UserDefaults.standard.object(forKey: "LocalConsole.Y") as? CGFloat ?? possibleEndpoints.first!.y)
         
         consoleView.center = cachedConsolePosition // Update console center so possibleEndpoints are calculated correctly.
         consoleView.center = nearestTargetTo(cachedConsolePosition, possibleTargets: possibleEndpoints)
@@ -742,6 +742,9 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         consoleTextView.attributedText = NSAttributedString(string: string, attributes: attributes)
     }
     
+    // Displays all UserDefaults keys, including unneeded keys that are included by default.
+    public var showAllUserDefaultsKeys = false
+    
     func makeMenu() -> UIMenu {
         
         let copy = UIAction(title: "Copy",
@@ -773,9 +776,126 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         let consoleActions = UIMenu(title: "", options: .displayInline, children: [clear, resize])
         
         var frameSymbol = "rectangle.3.offgrid"
+        
+        var debugActions: [UIMenuElement] = []
+        
         if #available(iOS 15, *) {
             frameSymbol = "square.inset.filled"
+            
+            let deferredUserDefaultsList = UIDeferredMenuElement.uncached { completion in
+                var actions: [UIAction] = []
+                
+                let keys: [String] = {
+                    
+                    if self.showAllUserDefaultsKeys {
+                        return UserDefaults.standard.dictionaryRepresentation().map { $0.key }
+                    }
+                    
+                    // Show keys the developer has added to the app (+ LocalConsole keys), excluding all of Apple's keys.
+                    if let bundle: String = Bundle.main.bundleIdentifier {
+                        let preferencePath: String = NSHomeDirectory() + "/Library/Preferences/\(bundle).plist"
+                        
+                        let _keys = NSDictionary(contentsOfFile: preferencePath)?.allKeys as! [String]
+                        
+                        return _keys.filter {
+                            !$0.contains("LocalConsole.")
+                        }
+                    }
+                    
+                    return []
+                }()
+                
+                if keys.isEmpty {
+                    actions.append(UIAction(title: "No Entries",
+                                            image: nil, attributes: .disabled, handler: { _ in }
+                                           ))
+                } else {
+                    for key in keys.sorted(by: { $0 < $1 }) {
+                        
+                        // Old LocalConsole Key Cleanup
+                        guard !key.contains("LocalConsole_") else {
+                            UserDefaults.standard.removeObject(forKey: key)
+                            continue
+                        }
+                        
+                        if let value = UserDefaults.standard.value(forKey: key) {
+                            let action = UIAction(title: key, image: nil) { _ in
+                                let alertController = UIAlertController(title: key,
+                                                                        message: nil,
+                                                                        preferredStyle: .alert)
+                                
+                                let headerParagraphStyle = NSMutableParagraphStyle()
+                                headerParagraphStyle.paragraphSpacing = 6
+                                let contentParagraphStyle = NSMutableParagraphStyle()
+                                
+                                let attributes: [NSAttributedString.Key: Any] = [
+                                    .paragraphStyle: contentParagraphStyle,
+                                    .foregroundColor: UIColor.label,
+                                    .font: UIFont.systemFont(ofSize: 13, weight: .semibold, design: .monospaced)
+                                ]
+                                
+                                let attributedTitle: NSMutableAttributedString = {
+                                    
+                                    let attributedString = NSMutableAttributedString(string: "Key\n" + key, attributes: attributes)
+                                    attributedString.addAttributes(
+                                        [NSAttributedString.Key.foregroundColor : UIColor.label.withAlphaComponent(0.5),
+                                         NSAttributedString.Key.paragraphStyle : headerParagraphStyle],
+                                        range: NSRange(location: 0, length: 3))
+                                    
+                                    return attributedString
+                                }()
+                                
+                                let attributedMessage: NSMutableAttributedString = {
+                                    
+                                    let attributedString = NSMutableAttributedString(string: "\nValue\n" + "\(value)", attributes: attributes)
+                                    attributedString.addAttributes(
+                                        [NSAttributedString.Key.foregroundColor : UIColor.label.withAlphaComponent(0.5),
+                                         NSAttributedString.Key.paragraphStyle : headerParagraphStyle],
+                                        range: NSRange(location: 0, length: 7))
+                                    
+                                    return attributedString
+                                }()
+                                
+                                alertController.setValue(attributedTitle, forKey: "attributedTitle")
+                                alertController.setValue(attributedMessage, forKey: "attributedMessage")
+                                
+                                alertController.addAction(UIAlertAction(title: "Copy Value", style: .default, handler: { _ in
+                                    UIPasteboard.general.string = "\(value)"
+                                }))
+                                alertController.addAction(UIAlertAction(title: "Clear Value", style: .destructive, handler: { _ in
+                                    UserDefaults.standard.removeObject(forKey: key)
+                                }))
+                                alertController.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { _ in
+                                }))
+                                
+                                self.viewController.present(alertController,
+                                                            animated: true)
+                            }
+                            action.subtitle = "\(value)"
+                            actions.append(action)
+                        }
+                    }
+                    
+                    
+                    actions.append(
+                        UIAction(title: "Clear Defaults",
+                                 image: UIImage(systemName: "trash"), attributes: .destructive, handler: { _ in
+                                     keys.forEach {
+                                         UserDefaults.standard.removeObject(forKey: $0)
+                                     }
+                                 })
+                    )
+                }
+                
+                
+                completion(actions)
+            }
+            
+            let userDefaults = UIMenu(title: "UserDefaults", image: UIImage(systemName: "doc.badge.gearshape"), children: [deferredUserDefaultsList])
+            
+            debugActions.append(userDefaults)
         }
+        
         
         let viewFrames = UIAction(title: debugBordersEnabled ? "Hide View Frames" : "Show View Frames",
                                   image: UIImage(systemName: frameSymbol), handler: { _ in
@@ -840,9 +960,11 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             }
         })
         
-        let debugActions = UIMenu(title: "", options: .displayInline,
+        debugActions.append(contentsOf: [viewFrames, systemReport, displayReport, respring])
+        
+        let debugMenu = UIMenu(title: "", options: .displayInline,
                                   children: [UIMenu(title: "Debug", image: UIImage(systemName: "ant"),
-                                                    children: [viewFrames, systemReport, displayReport, respring])])
+                                                    children: debugActions)])
         
         var menuContent: [UIMenuElement] = []
         
@@ -851,7 +973,9 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         } else {
             menuContent.append(resize)
         }
-        menuContent.append(debugActions)
+        menuContent.append(debugMenu)
+        
+        
         
         return UIMenu(title: "", children: menuContent)
     }
@@ -948,8 +1072,8 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             }
             positionAnimator.startAnimation()
             
-            UserDefaults.standard.set(nearestTargetPosition.x, forKey: "LocalConsole_X")
-            UserDefaults.standard.set(nearestTargetPosition.y, forKey: "LocalConsole_Y")
+            UserDefaults.standard.set(nearestTargetPosition.x, forKey: "LocalConsole.X")
+            UserDefaults.standard.set(nearestTargetPosition.y, forKey: "LocalConsole.Y")
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                 self.reassessGrabberMode()
