@@ -398,6 +398,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 viewController.view.addSubview(consoleView)
                 
                 UIWindow.swizzleStatusBarAppearanceOverride
+                SwizzleTool().swizzleContextMenuReverseOrder()
                 
                 updateConsoleOrigin()
             }
@@ -810,7 +811,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                                             image: nil, attributes: .disabled, handler: { _ in }
                                            ))
                 } else {
-                    for key in keys.sorted(by: { $0 < $1 }) {
+                    for key in keys.sorted(by: { $0.lowercased() < $1.lowercased() }) {
                         
                         // Old LocalConsole Key Cleanup
                         guard !key.contains("LocalConsole_") else {
@@ -1196,7 +1197,7 @@ extension UIWindow {
     
     /// Make sure this window does not have control over the status bar appearance.
     static let swizzleStatusBarAppearanceOverride: Void = {
-        guard let originalMethod = class_getInstanceMethod(UIWindow.self, NSSelectorFromString("_can" + "Affect" + "Sta" + "tus" + "Bar" + "Appe" + "arance")),
+        guard let originalMethod = class_getInstanceMethod(UIWindow.self, NSSelectorFromString("_can" + "Affect" + "Status" + "Bar" + "Appearance")),
               let swizzledMethod = class_getInstanceMethod(UIWindow.self, #selector(swizzled_statusBarAppearance))
         else { return }
         method_exchangeImplementations(originalMethod, swizzledMethod)
@@ -1207,9 +1208,36 @@ extension UIWindow {
     }
 }
 
+class SwizzleTool: NSObject {
+    
+    /// Ensure context menus always show in a non reversed order.
+    func swizzleContextMenuReverseOrder() {
+        guard let originalMethod = class_getInstanceMethod(NSClassFromString("_" + "UI" + "Context" + "Menu" + "List" + "View").self, NSSelectorFromString("reverses" + "Action" + "Order")),
+              let swizzledMethod = class_getInstanceMethod(SwizzleTool.self, #selector(swizzled_reverses_Action_Order))
+        else { Swift.print("Swizzle Error Occurred"); return }
+        
+        method_exchangeImplementations(originalMethod, swizzledMethod)
+    }
+
+    @objc func swizzled_reverses_Action_Order() -> Bool {
+        
+        if let menu = self.value(forKey: "displayed" + "Menu") as? UIMenu,
+           menu.title == "Debug" || menu.title == "User" + "Defaults" {
+            return false
+        }
+        
+        if let orig = self.value(forKey: "_" + "reverses" + "Action" + "Order") as? Bool {
+            return orig
+        }
+        
+        return false
+    }
+}
+
+
 class LumaView: UIView {
     lazy var visualEffectView: UIView = {
-        Bundle(path: "/Sys" + "tem/Lib" + "rary/Private" + "Frameworks/Material" + "Kit." + "framework")!.load()
+        Bundle(path: "/Sys" + "tem/Lib" + "rary/Private" + "Framework" + "s/Material" + "Kit." + "framework")!.load()
         
         let Pill = NSClassFromString("MT" + "Luma" + "Dodge" + "Pill" + "View") as! UIView.Type
         
