@@ -312,7 +312,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         let tapRecognizer = UITapStartEndGestureRecognizer(target: self, action: #selector(consolePiPTapStartEnd(recognizer:)))
         tapRecognizer.delegate = self
         
-        longPressRecognizer.minimumPressDuration = 0.1
+        longPressRecognizer.minimumPressDuration = 0.3
         
         consoleView.addGestureRecognizer(panRecognizer)
         consoleView.addGestureRecognizer(tapRecognizer)
@@ -638,8 +638,13 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     }
     
     var dynamicReportTimer: Timer? {
-        willSet { dynamicReportTimer?.invalidate() }
+        willSet {
+            timerInvalidationCounter = 0
+            dynamicReportTimer?.invalidate()
+        }
     }
+    
+    var timerInvalidationCounter = 0
     
     func systemReport() {
         DispatchQueue.main.async { [self] in
@@ -647,6 +652,9 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             if currentText != "" { print("\n") }
             
             dynamicReportTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
+                
+                guard consoleTextView.panGestureRecognizer.numberOfTouches == 0 else { return }
+                
                 var _currentText = currentText
                 
                 // To optimize performance, only scan the last 2500 characters of text for system report changes.
@@ -668,10 +676,19 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 
                 if currentText != _currentText {
                     currentText = _currentText
+                    
+                    timerInvalidationCounter = 0
+                    
                 } else {
                     
-                    // Invalidate the timer if there is no longer anything to update.
-                    timer.invalidate()
+                    timerInvalidationCounter += 1
+                    
+                    // It has been 2 seconds and values have not changed.
+                    if timerInvalidationCounter == 2 {
+                        
+                        // Invalidate the timer if there is no longer anything to update.
+                        dynamicReportTimer = nil
+                    }
                 }
             }
             
@@ -979,6 +996,8 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         return UIMenu(title: "", children: menuContent)
     }
     
+    var consolePiPPopAnimator: UIViewPropertyAnimator?
+    
     @objc func longPressAction(recognizer: UILongPressGestureRecognizer) {
         switch recognizer.state {
         case .began:
@@ -989,8 +1008,12 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             
             scrollLocked = false
             
-            UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
+            consolePiPPopAnimator = UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
                 consoleView.transform = .init(scaleX: 1.04, y: 1.04)
+            }
+            consolePiPPopAnimator?.startAnimation()
+            
+            UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
                 consoleTextView.alpha = 0.5
                 menuButton.alpha = 0.5
             }.startAnimation()
@@ -1025,7 +1048,10 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             initialViewLocation = consoleView.center
         }
         
-        guard !scrollLocked else { return }
+        guard !scrollLocked else {
+            isPressed = false
+            return
+        }
         
         let translation = recognizer.translation(in: consoleView.superview)
         let velocity = recognizer.velocity(in: consoleView.superview)
@@ -1091,30 +1117,37 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         }
     }
     
-    // Animate touch down.
-    func consolePiPTouchDown() {
-        guard !grabberMode else { return }
-        
-        UIViewPropertyAnimator(duration: 0.75, dampingRatio: 1) { [self] in
-            consoleView.transform = .init(scaleX: 0.97, y: 0.97)
-        }.startAnimation()
-    }
+    var consolePiPTouchDownAnimator: UIViewPropertyAnimator?
     
-    // Animate touch up.
-    func consolePiPTouchUp() {
-        
-        UIViewPropertyAnimator(duration: scrollLocked ? 0.4 : 0.7, dampingRatio: scrollLocked ? 1 : 0.45) { [self] in
-            consoleView.transform = .identity
-        }.startAnimation()
-        
-        UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
-            if !grabberMode {
-                consoleTextView.alpha = 1
-                if !ResizeController.shared.isActive {
-                    menuButton.alpha = 1
+    var isPressed: Bool = false {
+        didSet {
+            guard oldValue != isPressed else { return }
+            
+            if isPressed {
+                guard !grabberMode else { return }
+                
+                consolePiPTouchDownAnimator = UIViewPropertyAnimator(duration: 0.6, dampingRatio: 1) { [self] in
+                    consoleView.transform = .init(scaleX: 0.96, y: 0.96)
                 }
+                consolePiPTouchDownAnimator?.startAnimation(afterDelay: 0.1)
+            } else {
+                consolePiPTouchDownAnimator?.stopAnimation(true)
+                consolePiPPopAnimator?.stopAnimation(true)
+                
+                UIViewPropertyAnimator(duration: scrollLocked ? 0.4 : 0.7, dampingRatio: scrollLocked ? 1 : 0.45) { [self] in
+                    consoleView.transform = .identity
+                }.startAnimation()
+                
+                UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
+                    if !grabberMode {
+                        consoleTextView.alpha = 1
+                        if !ResizeController.shared.isActive {
+                            menuButton.alpha = 1
+                        }
+                    }
+                }.startAnimation()
             }
-        }.startAnimation()
+        }
     }
     
     // Simulataneously listen to all gesture recognizers.
@@ -1125,11 +1158,11 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     @objc func consolePiPTapStartEnd(recognizer: UITapStartEndGestureRecognizer) {
         switch recognizer.state {
         case .began:
-            consolePiPTouchDown()
+            isPressed = true
         case .changed:
             break
         case .ended, .cancelled, .possible, .failed:
-            consolePiPTouchUp()
+            isPressed = false
         @unknown default:
             break
         }
@@ -1368,7 +1401,6 @@ fileprivate func _debugPrint(_ items: Any) {
 
 // Support for auto-rotate.
 class ConsoleViewController: UIViewController {
-    
     
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
         
