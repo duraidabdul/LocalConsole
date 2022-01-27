@@ -765,9 +765,11 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     
     func makeMenu() -> UIMenu {
         
-        let copy = UIAction(title: "Copy",
-                            image: UIImage(systemName: "doc.on.doc"), handler: { _ in
-            self.copy()
+        let share = UIAction(title: "Share",
+                            image: UIImage(systemName: "square.and.arrow.up"), handler: { _ in
+            let activityViewController = UIActivityViewController(activityItems: [self.consoleTextView.text ?? ""],
+                                                                  applicationActivities: nil)
+            self.viewController.present(activityViewController, animated: true)
         })
         
         let resize = UIAction(title: "Resize Console",
@@ -987,7 +989,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         var menuContent: [UIMenuElement] = []
         
         if consoleTextView.text != "" {
-            menuContent.append(contentsOf: [copy, consoleActions])
+            menuContent.append(contentsOf: [share, consoleActions])
         } else {
             menuContent.append(resize)
         }
