@@ -383,8 +383,10 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 .first
             
             if let windowScene = windowScene as? UIWindowScene {
-                
                 windowSceneFound = true
+                
+                UIWindow.swizzleStatusBarAppearanceOverride()
+                SwizzleTool().swizzleContextMenuReverseOrder()
                 
                 consoleWindow = ConsoleWindow(windowScene: windowScene)
                 consoleWindow?.frame = UIScreen.main.bounds
@@ -396,9 +398,6 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 consoleWindow?.rootViewController = viewController
                 
                 viewController.view.addSubview(consoleView)
-                
-                UIWindow.swizzleStatusBarAppearanceOverride
-                SwizzleTool().swizzleContextMenuReverseOrder()
                 
                 updateConsoleOrigin()
             }
@@ -765,7 +764,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     
     func makeMenu() -> UIMenu {
         
-        let share = UIAction(title: "Share",
+        let share = UIAction(title: "Share Text...",
                             image: UIImage(systemName: "square.and.arrow.up"), handler: { _ in
             let activityViewController = UIActivityViewController(activityItems: [self.consoleTextView.text ?? ""],
                                                                   applicationActivities: nil)
@@ -1231,12 +1230,13 @@ extension UIView {
 extension UIWindow {
     
     /// Make sure this window does not have control over the status bar appearance.
-    static let swizzleStatusBarAppearanceOverride: Void = {
+    static func swizzleStatusBarAppearanceOverride() {
         guard let originalMethod = class_getInstanceMethod(UIWindow.self, NSSelectorFromString("_can" + "Affect" + "Status" + "Bar" + "Appearance")),
               let swizzledMethod = class_getInstanceMethod(UIWindow.self, #selector(swizzled_statusBarAppearance))
         else { return }
+        
         method_exchangeImplementations(originalMethod, swizzledMethod)
-    }()
+    }
     
     @objc func swizzled_statusBarAppearance() -> Bool {
         return isKeyWindow
