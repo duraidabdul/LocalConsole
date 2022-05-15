@@ -13,7 +13,7 @@ Welcome to LocalConsole! This Swift Package makes on-device debugging easy with 
 
 2. Paste the following into the URL field: https://github.com/duraidabdul/LocalConsole/
 
-3. Once the package dependancy has been added, ```import LocalConsole``` and create an easily accessible global instance of ```LCManager.shared```.
+3. Once the package dependancy has been added, import LocalConsole and create an easily accessible global instance of ```LCManager.shared```.
 ```swift
 import LocalConsole
 
