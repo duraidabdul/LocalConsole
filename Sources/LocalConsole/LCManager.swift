@@ -155,13 +155,14 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     var scrollLocked = true
     
     /// Feedback generator for the long press action.
-    lazy var feedbackGenerator = UISelectionFeedbackGenerator()
+    lazy var feedbackGenerator = UIImpactFeedbackGenerator(style: .soft)
     
     lazy var panRecognizer = UIPanGestureRecognizer(target: self, action: #selector(consolePiPPanner(recognizer:)))
     lazy var longPressRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(longPressAction(recognizer:)))
     
     /// Gesture endpoints. Each point represents a corner of the screen. TODO: Handle screen rotation.
     var possibleEndpoints: [CGPoint] {
+        guard let consoleWindow else { return [] }
         
         let screenSize = viewController.view.frame.size
         
@@ -169,32 +170,31 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         let isPortraitNotchedPhone = UIDevice.current.hasNotch && viewController.view.frame.size.width < viewController.view.frame.size.height
         
         // Fix incorrect reported orientation on phone.
-        let isLandscapePhone = (UIDevice.current.orientation == .landscapeLeft || UIDevice.current.orientation == .landscapeRight) && UIDevice.current.userInterfaceIdiom == .phone
+        let isLandscapePhone = UIDevice.current.userInterfaceIdiom == .phone && viewController.view.frame.width > viewController.view.frame.height
         
         let isLandscapeLeftNotchedPhone = UIDevice.current.orientation == .landscapeLeft
         && UIDevice.current.userInterfaceIdiom == .phone
         && UIDevice.current.hasNotch
+        && isLandscapePhone
         
         let isLandscapeRightNotchedPhone = UIDevice.current.orientation == .landscapeRight
         && UIDevice.current.userInterfaceIdiom == .phone
         && UIDevice.current.hasNotch
+        && isLandscapePhone
+        
+        let leftEndpointX = consoleSize.width / 2 + consoleWindow.safeAreaInsets.left + (isLandscapePhone ? 4 : 12) + (isLandscapeRightNotchedPhone ? -16 : 0)
+        let rightEndpointX = screenSize.width - (consoleSize.width / 2 + consoleWindow.safeAreaInsets.right) - (isLandscapePhone ? 4 : 12) + (isLandscapeLeftNotchedPhone ? 16 : 0)
+        let topEndpointY = consoleSize.height / 2 + consoleWindow.safeAreaInsets.top + 12 + (isPortraitNotchedPhone ? -10 : 0)
+        let bottomEndpointY = screenSize.height - (consoleSize.height / 2 + consoleWindow.safeAreaInsets.bottom) - 12 + (isLandscapePhone ? 10 : 0)
         
         if consoleSize.width < screenSize.width - 112 {
-            
             // Four endpoints, one for each corner.
             var endpoints = [
-                
-                // Top endpoints.
-                CGPoint(x: consoleSize.width / 2 + 12 + (isLandscapeLeftNotchedPhone ? 40 : isLandscapePhone ? 12 : 0),
-                        y: (isPortraitNotchedPhone ? 38 : isLandscapePhone ? 0 : 16) + consoleSize.height / 2 + 12),
-                CGPoint(x: screenSize.width - consoleSize.width / 2 - 12 - (isLandscapeRightNotchedPhone ? 40 : isLandscapePhone ? 12 : 0),
-                        y: (isPortraitNotchedPhone ? 38 : isLandscapePhone ? 0 : 16) + consoleSize.height / 2 + 12),
-                
-                // Bottom endpoints.
-                CGPoint(x: consoleSize.width / 2 + 12 + (isLandscapeLeftNotchedPhone ? 40 : isLandscapePhone ? 12 : 0),
-                        y: screenSize.height - consoleSize.height / 2 - (keyboardHeight ?? consoleWindow?.safeAreaInsets.bottom ?? 0) - 12),
-                CGPoint(x: screenSize.width - consoleSize.width / 2 - 12 - (isLandscapeRightNotchedPhone ? 40 : isLandscapePhone ? 12 : 02),
-                        y: screenSize.height - consoleSize.height / 2 - (keyboardHeight ?? consoleWindow?.safeAreaInsets.bottom ?? 0) - 12)]
+                CGPoint(x: leftEndpointX, y: topEndpointY),
+                CGPoint(x: rightEndpointX, y: topEndpointY),
+                CGPoint(x: leftEndpointX, y: bottomEndpointY),
+                CGPoint(x: rightEndpointX, y: bottomEndpointY),
+            ]
             
             if consoleView.frame.minX <= 0 {
                 
@@ -231,12 +231,11 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             return endpoints
             
         } else {
-            
             // Two endpoints, one for the top, one for the bottom..
-            var endpoints = [CGPoint(x: screenSize.width / 2,
-                                     y: (UIScreen.hasRoundedCorners ? 38 : 16) + consoleSize.height / 2 + 12),
-                             CGPoint(x: screenSize.width / 2,
-                                     y: screenSize.height - consoleSize.height / 2 - (keyboardHeight ?? consoleWindow?.safeAreaInsets.bottom ?? 0) - 12)]
+            var endpoints = [
+                CGPoint(x: screenSize.width / 2, y: topEndpointY),
+                CGPoint(x: screenSize.width / 2, y: bottomEndpointY)
+            ]
             
             if consoleView.frame.minX <= 0 {
                 
@@ -284,7 +283,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         borderView.frame = CGRect(x: -1, y: -1,
                                   width: consoleSize.width + 2,
                                   height: consoleSize.height + 2)
-        borderView.layer.borderWidth = 1
+        borderView.layer.borderWidth = 2 - 1 / consoleView.traitCollection.displayScale
         borderView.layer.borderColor = UIColor(white: 1, alpha: 0.08).cgColor
         borderView.layer.cornerRadius = consoleView.layer.cornerRadius + 1
         borderView.layer.cornerCurve = .continuous
@@ -482,7 +481,6 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             guard oldValue != grabberMode else { return }
             
             if grabberMode {
-                
                 lumaView.layer.cornerRadius = consoleView.layer.cornerRadius
                 lumaHeightAnchor.constant = consoleView.frame.size.height
                 consoleView.layoutIfNeeded()
@@ -500,7 +498,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 lumaWidthAnchor.constant = -34
                 lumaHeightAnchor.constant = 96
                 UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
-                    lumaView.layer.cornerRadius = 8
+                    lumaView.layer.cornerRadius = 9
                     consoleView.layoutIfNeeded()
                 }.startAnimation(afterDelay: 0.06)
                 
@@ -715,13 +713,20 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             
             if currentText != "" { print("\n") }
             
+            let safeAreaInsets = consoleWindow?.safeAreaInsets ?? .zero
+            
             print(
                   """
-                  Screen Size:            \(UIScreen.main.bounds.size)
-                  Screen Corner Radius:   \(UIScreen.main.value(forKey: "_displ" + "ayCorn" + "erRa" + "dius") as! CGFloat)
-                  Screen Scale:           \(UIScreen.main.scale)
-                  Max Frame Rate:         \(UIScreen.main.maximumFramesPerSecond) Hz
-                  Brightness:             \(String(format: "%.2f", UIScreen.main.brightness))
+                  Screen Size:       \(UIScreen.main.bounds.size)
+                  Corner Radius:     \(UIScreen.main.value(forKey: "_displ" + "ayCorn" + "erRa" + "dius") as! CGFloat)
+                  Screen Scale:      \(UIScreen.main.scale)
+                  Max Frame Rate:    \(UIScreen.main.maximumFramesPerSecond) Hz
+                  Brightness:        \(String(format: "%.2f", UIScreen.main.brightness))
+                  
+                  Safe Area Insets:  top:    \(String(describing: safeAreaInsets.top))
+                                     left:   \(String(describing: safeAreaInsets.left))
+                                     bottom: \(String(describing: safeAreaInsets.bottom))
+                                     right:  \(String(describing: safeAreaInsets.right))
                   """
             )
         }
@@ -1005,7 +1010,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             
             guard !grabberMode else { return }
             
-            feedbackGenerator.selectionChanged()
+            feedbackGenerator.impactOccurred(intensity: 1)
             
             scrollLocked = false
             
