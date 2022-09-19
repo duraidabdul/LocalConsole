@@ -185,7 +185,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         let leftEndpointX = consoleSize.width / 2 + consoleWindow.safeAreaInsets.left + (isLandscapePhone ? 4 : 12) + (isLandscapeRightNotchedPhone ? -16 : 0)
         let rightEndpointX = screenSize.width - (consoleSize.width / 2 + consoleWindow.safeAreaInsets.right) - (isLandscapePhone ? 4 : 12) + (isLandscapeLeftNotchedPhone ? 16 : 0)
         let topEndpointY = consoleSize.height / 2 + consoleWindow.safeAreaInsets.top + 12 + (isPortraitNotchedPhone ? -10 : 0)
-        let bottomEndpointY = screenSize.height - (consoleSize.height / 2 + consoleWindow.safeAreaInsets.bottom) - 12 + (isLandscapePhone ? 10 : 0)
+        let bottomEndpointY = screenSize.height - consoleSize.height / 2 - (keyboardHeight ?? consoleWindow.safeAreaInsets.bottom) - 12 + (isLandscapePhone ? 10 : 0)
         
         if consoleSize.width < screenSize.width - 112 {
             // Four endpoints, one for each corner.
