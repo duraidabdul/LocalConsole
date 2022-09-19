@@ -280,10 +280,12 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         
         let _ = lumaView
         
-        borderView.frame = CGRect(x: -1, y: -1,
-                                  width: consoleSize.width + 2,
-                                  height: consoleSize.height + 2)
-        borderView.layer.borderWidth = 2 - 1 / consoleView.traitCollection.displayScale
+        let borderWidth = 2 - 1 / consoleView.traitCollection.displayScale
+        
+        borderView.frame = CGRect(x: -borderWidth, y: -borderWidth,
+                                  width: consoleSize.width + 2 * borderWidth,
+                                  height: consoleSize.height + 2 * borderWidth)
+        borderView.layer.borderWidth = borderWidth
         borderView.layer.borderColor = UIColor(white: 1, alpha: 0.08).cgColor
         borderView.layer.cornerRadius = consoleView.layer.cornerRadius + 1
         borderView.layer.cornerCurve = .continuous
