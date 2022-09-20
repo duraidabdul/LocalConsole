@@ -162,7 +162,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     
     /// Gesture endpoints. Each point represents a corner of the screen. TODO: Handle screen rotation.
     var possibleEndpoints: [CGPoint] {
-        guard let consoleWindow else { return [] }
+        guard let consoleWindow = consoleWindow else { return [] }
         
         let screenSize = viewController.view.frame.size
         
