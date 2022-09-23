@@ -22,8 +22,8 @@ let consoleManager = LCManager.shared
 
 ## **Usage**
 Once prepared, the consoleManager can be used throughout your project.
-```swift
 
+```swift
 // Activate the console view.
 consoleManager.isVisible = true
 
@@ -45,4 +45,9 @@ consoleManager.copy()
 ```swift
 // Change the console view font size.
 consoleManager.fontSize = 5
+```
+
+```swift
+// Change the available menu items.
+consoleManager.showRestartSpringboardMenuItem = false
 ```
