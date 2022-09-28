@@ -480,23 +480,10 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     public var isCharacterLimitDisabled = false
     public var isCharacterLimitWarningDisabled = false
     
-    public var showDebugMenuItem = true {
-        didSet { menuButton.menu = makeMenu() }
-    }
-    public var showUserDefaultsMenuItem = true {
-        didSet { menuButton.menu = makeMenu() }
-    }
-    public var showViewFramesMenuItem = true {
-        didSet { menuButton.menu = makeMenu() }
-    }
-    public var showSystemReportMenuItem = true {
-        didSet { menuButton.menu = makeMenu() }
-    }
-    public var showDisplayReportMenuItem = true {
-        didSet { menuButton.menu = makeMenu() }
-    }
-    public var showRestartSpringboardMenuItem = true {
-        didSet { menuButton.menu = makeMenu() }
+    public var showDebugMenu = true {
+        didSet {
+            menuButton.menu = makeMenu()
+        }
     }
     
     // Displays all UserDefaults keys, including unneeded keys that are included by default.
@@ -789,6 +776,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     }
     
     func makeMenu() -> UIMenu {
+        var menuContent: [UIMenuElement] = []
         
         let share = UIAction(title: "Share Text...",
                             image: UIImage(systemName: "square.and.arrow.up"), handler: { _ in
@@ -820,11 +808,17 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         
         let consoleActions = UIMenu(title: "", options: .displayInline, children: [clear, resize])
         
-        var frameSymbol = "rectangle.3.offgrid"
+        if consoleTextView.text != "" {
+            menuContent.append(contentsOf: [share, consoleActions])
+        } else {
+            menuContent.append(resize)
+        }
         
-        var debugActions: [UIMenuElement] = []
-        
-        if showUserDefaultsMenuItem {
+        if showDebugMenu {
+            var debugActions: [UIMenuElement] = []
+            
+            var frameSymbol = "rectangle.3.offgrid"
+            
             if #available(iOS 15, *) {
                 frameSymbol = "square.inset.filled"
                 
@@ -941,28 +935,19 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 
                 debugActions.append(userDefaults)
             }
-        }
-        
-        if showViewFramesMenuItem {
+            
+            
             let viewFrames = UIAction(title: debugBordersEnabled ? "Hide View Frames" : "Show View Frames",
                                       image: UIImage(systemName: frameSymbol), handler: { _ in
                 self.debugBordersEnabled.toggle()
                 self.menuButton.menu = self.makeMenu()
             })
             
-            debugActions.append(viewFrames)
-        }
-        
-        if showSystemReportMenuItem {
             let systemReport = UIAction(title: "System Report",
                                         image: UIImage(systemName: "cpu"), handler: { _ in
                 self.systemReport()
             })
             
-            debugActions.append(systemReport)
-        }
-        
-        if showDisplayReportMenuItem {
             // Show the right glyph for the current device being used.
             let deviceSymbol: String = {
                 
@@ -990,10 +975,6 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 self.displayReport()
             })
             
-            debugActions.append(displayReport)
-        }
-        
-        if showRestartSpringboardMenuItem {
             let respring = UIAction(title: "Restart Spring" + "Board",
                                     image: UIImage(systemName: "apps.iphone"), handler: { _ in
                 
@@ -1019,22 +1000,11 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 }
             })
             
-            debugActions.append(respring)
-        }
-        
-        
-        var menuContent: [UIMenuElement] = []
-        
-        if consoleTextView.text != "" {
-            menuContent.append(contentsOf: [share, consoleActions])
-        } else {
-            menuContent.append(resize)
-        }
-        
-        if showDebugMenuItem && !debugActions.isEmpty {
+            debugActions.append(contentsOf: [viewFrames, systemReport, displayReport, respring])
+            
             let debugMenu = UIMenu(title: "", options: .displayInline,
-                                      children: [UIMenu(title: "Debug", image: UIImage(systemName: "ant"),
-                                                        children: debugActions)])
+                                   children: [UIMenu(title: "Debug", image: UIImage(systemName: "ant"),
+                                                     children: debugActions)])
             
             menuContent.append(debugMenu)
         }

@@ -48,6 +48,6 @@ consoleManager.fontSize = 5
 ```
 
 ```swift
-// Change the available menu items.
-consoleManager.showRestartSpringboardMenuItem = false
+// Hide the Debug menu.
+consoleManager.showDebugMenu = false
 ```
