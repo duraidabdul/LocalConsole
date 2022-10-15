@@ -1271,41 +1271,56 @@ class SwizzleTool: NSObject {
 class LumaView: UIView {
     lazy var visualEffectView: UIView = {
         Bundle(path: "/Sys" + "tem/Lib" + "rary/Private" + "Framework" + "s/Material" + "Kit." + "framework")!.load()
-        
-        let Pill = NSClassFromString("MT" + "Luma" + "Dodge" + "Pill" + "View") as! UIView.Type
-        
-        let pillView = Pill.init()
-        
-        enum Style: Int {
-            case none = 0
-            case thin = 1
-            case gray = 2
-            case black = 3
-            case white = 4
+
+        if let Pill = NSClassFromString("MT" + "Luma" + "Dodge" + "Pill" + "View") as? UIView.Type {
+            
+            let pillView = Pill.init()
+            
+            enum Style: Int {
+                case none = 0
+                case thin = 1
+                case gray = 2
+                case black = 3
+                case white = 4
+            }
+            
+            enum BackgroundLuminance: Int {
+                case unknown = 0
+                case dark = 1
+                case light = 2
+            }
+            
+            pillView.setValue(2, forKey: "style")
+            pillView.setValue(1, forKey: "background" + "Luminance")
+            pillView.perform(NSSelectorFromString("_" + "update" + "Style"))
+            
+            addSubview(pillView)
+            
+            pillView.translatesAutoresizingMaskIntoConstraints = false
+            
+            NSLayoutConstraint.activate([
+                pillView.leadingAnchor.constraint(equalTo: leadingAnchor),
+                pillView.trailingAnchor.constraint(equalTo: trailingAnchor),
+                pillView.topAnchor.constraint(equalTo: topAnchor),
+                pillView.bottomAnchor.constraint(equalTo: bottomAnchor)
+            ])
+            
+            return pillView
+        } else {
+            let visualEffectView = UIVisualEffectView(effect: UIBlurEffect(style: .systemMaterialDark))
+            addSubview(visualEffectView)
+            
+            visualEffectView.translatesAutoresizingMaskIntoConstraints = false
+            
+            NSLayoutConstraint.activate([
+                visualEffectView.leadingAnchor.constraint(equalTo: leadingAnchor),
+                visualEffectView.trailingAnchor.constraint(equalTo: trailingAnchor),
+                visualEffectView.topAnchor.constraint(equalTo: topAnchor),
+                visualEffectView.bottomAnchor.constraint(equalTo: bottomAnchor)
+            ])
+            
+            return visualEffectView
         }
-        
-        enum BackgroundLuminance: Int {
-            case unknown = 0
-            case dark = 1
-            case light = 2
-        }
-        
-        pillView.setValue(2, forKey: "style")
-        pillView.setValue(1, forKey: "background" + "Luminance")
-        pillView.perform(NSSelectorFromString("_" + "update" + "Style"))
-        
-        addSubview(pillView)
-        
-        pillView.translatesAutoresizingMaskIntoConstraints = false
-        
-        NSLayoutConstraint.activate([
-            pillView.leadingAnchor.constraint(equalTo: leadingAnchor),
-            pillView.trailingAnchor.constraint(equalTo: trailingAnchor),
-            pillView.topAnchor.constraint(equalTo: topAnchor),
-            pillView.bottomAnchor.constraint(equalTo: bottomAnchor)
-        ])
-        
-        return pillView
     }()
     
     lazy var foregroundView: UIView = {
