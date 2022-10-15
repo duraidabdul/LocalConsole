@@ -477,6 +477,56 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         }
     }
     
+    public var isCharacterLimitDisabled = false
+    public var isCharacterLimitWarningDisabled = false
+    
+    public var showDebugMenu = true {
+        didSet {
+            menuButton.menu = makeMenu()
+        }
+    }
+    
+    // Displays all UserDefaults keys, including unneeded keys that are included by default.
+    public var showAllUserDefaultsKeys = false
+    
+    /// Print items to the console view.
+    public func print(_ items: Any) {
+        let _currentText: String = {
+            if currentText == "" {
+                return "\(items)"
+            } else {
+                return currentText + "\n\(items)"
+            }
+        }()
+        
+        // Cut down string if it exceeds 50,000 characters to keep text view running smoothly.
+        if _currentText.count > 50000 && !isCharacterLimitDisabled {
+            
+            if !hasShortened && !isCharacterLimitWarningDisabled {
+                hasShortened = true
+                Swift.print("LocalConsole's content has exceeded 50,000 characters.\nTo maintain performance, LCManager cuts down the beginning of the printed content. To disable this behaviour, set LCManager.shared.isCharacterLimitDisabled to true.\nTo disable this warning, set LCManager.shared.isCharacterLimitWarningDisabled = true.")
+                
+            }
+            
+            let shortenedString = String(_currentText.suffix(50000))
+            currentText = shortenedString.stringAfterFirstOccurenceOf(delimiter: "\n") ?? shortenedString
+        } else {
+            currentText = _currentText
+        }
+    }
+    
+    /// Clear text in the console view.
+    public func clear() {
+        currentText = ""
+    }
+    
+    /// Copy the console view text to the device's clipboard.
+    public func copy() {
+        UIPasteboard.general.string = consoleTextView.text
+    }
+    
+    // MARK: - Private
+    
     var grabberMode: Bool = false {
         
         didSet {
@@ -533,47 +583,6 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     }
     
     var hasShortened = false
-    
-    public var isCharacterLimitDisabled = false
-    public var isCharacterLimitWarningDisabled = false
-    
-    /// Print items to the console view.
-    public func print(_ items: Any) {
-        let _currentText: String = {
-            if currentText == "" {
-                return "\(items)"
-            } else {
-                return currentText + "\n\(items)"
-            }
-        }()
-        
-        // Cut down string if it exceeds 50,000 characters to keep text view running smoothly.
-        if _currentText.count > 50000 && !isCharacterLimitDisabled {
-            
-            if !hasShortened && !isCharacterLimitWarningDisabled {
-                hasShortened = true
-                Swift.print("LocalConsole's content has exceeded 50,000 characters.\nTo maintain performance, LCManager cuts down the beginning of the printed content. To disable this behaviour, set LCManager.shared.isCharacterLimitDisabled to true.\nTo disable this warning, set LCManager.shared.isCharacterLimitWarningDisabled = true.")
-                
-            }
-            
-            let shortenedString = String(_currentText.suffix(50000))
-            currentText = shortenedString.stringAfterFirstOccurenceOf(delimiter: "\n") ?? shortenedString
-        } else {
-            currentText = _currentText
-        }
-    }
-    
-    /// Clear text in the console view.
-    public func clear() {
-        currentText = ""
-    }
-    
-    /// Copy the console view text to the device's clipboard.
-    public func copy() {
-        UIPasteboard.general.string = consoleTextView.text
-    }
-    
-    // MARK: - Private
     
     var temporaryKeyboardHeightValueTracker: CGFloat?
     
@@ -765,10 +774,8 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         consoleTextView.attributedText = NSAttributedString(string: string, attributes: attributes)
     }
     
-    // Displays all UserDefaults keys, including unneeded keys that are included by default.
-    public var showAllUserDefaultsKeys = false
-    
     func makeMenu() -> UIMenu {
+        var menuContent: [UIMenuElement] = []
         
         let share = UIAction(title: "Share Text...",
                             image: UIImage(systemName: "square.and.arrow.up"), handler: { _ in
@@ -800,205 +807,206 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         
         let consoleActions = UIMenu(title: "", options: .displayInline, children: [clear, resize])
         
-        var frameSymbol = "rectangle.3.offgrid"
-        
-        var debugActions: [UIMenuElement] = []
-        
-        if #available(iOS 15, *) {
-            frameSymbol = "square.inset.filled"
-            
-            let deferredUserDefaultsList = UIDeferredMenuElement.uncached { completion in
-                var actions: [UIAction] = []
-                
-                let keys: [String] = {
-                    
-                    if self.showAllUserDefaultsKeys {
-                        return UserDefaults.standard.dictionaryRepresentation().map { $0.key }
-                    }
-                    
-                    // Show keys the developer has added to the app (+ LocalConsole keys), excluding all of Apple's keys.
-                    if let bundle: String = Bundle.main.bundleIdentifier {
-                        let preferencePath: String = NSHomeDirectory() + "/Library/Preferences/\(bundle).plist"
-                        
-                        let _keys = NSDictionary(contentsOfFile: preferencePath)?.allKeys as! [String]
-                        
-                        return _keys.filter {
-                            !$0.contains("LocalConsole.")
-                        }
-                    }
-                    
-                    return []
-                }()
-                
-                if keys.isEmpty {
-                    actions.append(UIAction(title: "No Entries",
-                                            image: nil, attributes: .disabled, handler: { _ in }
-                                           ))
-                } else {
-                    for key in keys.sorted(by: { $0.lowercased() < $1.lowercased() }) {
-                        
-                        // Old LocalConsole Key Cleanup
-                        guard !key.contains("LocalConsole_") else {
-                            UserDefaults.standard.removeObject(forKey: key)
-                            continue
-                        }
-                        
-                        if let value = UserDefaults.standard.value(forKey: key) {
-                            let action = UIAction(title: key, image: nil) { _ in
-                                let alertController = UIAlertController(title: key,
-                                                                        message: nil,
-                                                                        preferredStyle: .alert)
-                                
-                                let headerParagraphStyle = NSMutableParagraphStyle()
-                                headerParagraphStyle.paragraphSpacing = 6
-                                let contentParagraphStyle = NSMutableParagraphStyle()
-                                
-                                let attributes: [NSAttributedString.Key: Any] = [
-                                    .paragraphStyle: contentParagraphStyle,
-                                    .foregroundColor: UIColor.label,
-                                    .font: UIFont.systemFont(ofSize: 13, weight: .semibold, design: .monospaced)
-                                ]
-                                
-                                let attributedTitle: NSMutableAttributedString = {
-                                    
-                                    let attributedString = NSMutableAttributedString(string: "Key\n" + key, attributes: attributes)
-                                    attributedString.addAttributes(
-                                        [NSAttributedString.Key.foregroundColor : UIColor.label.withAlphaComponent(0.5),
-                                         NSAttributedString.Key.paragraphStyle : headerParagraphStyle],
-                                        range: NSRange(location: 0, length: 3))
-                                    
-                                    return attributedString
-                                }()
-                                
-                                let attributedMessage: NSMutableAttributedString = {
-                                    
-                                    let attributedString = NSMutableAttributedString(string: "\nValue\n" + "\(value)", attributes: attributes)
-                                    attributedString.addAttributes(
-                                        [NSAttributedString.Key.foregroundColor : UIColor.label.withAlphaComponent(0.5),
-                                         NSAttributedString.Key.paragraphStyle : headerParagraphStyle],
-                                        range: NSRange(location: 0, length: 7))
-                                    
-                                    return attributedString
-                                }()
-                                
-                                alertController.setValue(attributedTitle, forKey: "attributedTitle")
-                                alertController.setValue(attributedMessage, forKey: "attributedMessage")
-                                
-                                alertController.addAction(UIAlertAction(title: "Copy Value", style: .default, handler: { _ in
-                                    UIPasteboard.general.string = "\(value)"
-                                }))
-                                alertController.addAction(UIAlertAction(title: "Clear Value", style: .destructive, handler: { _ in
-                                    UserDefaults.standard.removeObject(forKey: key)
-                                }))
-                                alertController.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { _ in
-                                }))
-                                
-                                self.viewController.present(alertController,
-                                                            animated: true)
-                            }
-                            action.subtitle = "\(value)"
-                            actions.append(action)
-                        }
-                    }
-                    
-                    
-                    actions.append(
-                        UIAction(title: "Clear Defaults",
-                                 image: UIImage(systemName: "trash"), attributes: .destructive, handler: { _ in
-                                     keys.forEach {
-                                         UserDefaults.standard.removeObject(forKey: $0)
-                                     }
-                                 })
-                    )
-                }
-                
-                
-                completion(actions)
-            }
-            
-            let userDefaults = UIMenu(title: "UserDefaults", image: UIImage(systemName: "doc.badge.gearshape"), children: [deferredUserDefaultsList])
-            
-            debugActions.append(userDefaults)
-        }
-        
-        
-        let viewFrames = UIAction(title: debugBordersEnabled ? "Hide View Frames" : "Show View Frames",
-                                  image: UIImage(systemName: frameSymbol), handler: { _ in
-            self.debugBordersEnabled.toggle()
-            self.menuButton.menu = self.makeMenu()
-        })
-        
-        let systemReport = UIAction(title: "System Report",
-                                    image: UIImage(systemName: "cpu"), handler: { _ in
-            self.systemReport()
-        })
-        
-        // Show the right glyph for the current device being used.
-        let deviceSymbol: String = {
-            
-            let hasHomeButton = UIScreen.main.value(forKey: "_displ" + "ayCorn" + "erRa" + "dius") as! CGFloat == 0
-            
-            if UIDevice.current.userInterfaceIdiom == .pad {
-                if hasHomeButton {
-                    return "ipad.homebutton"
-                } else {
-                    return "ipad"
-                }
-            } else if UIDevice.current.userInterfaceIdiom == .phone {
-                if hasHomeButton {
-                    return "iphone.homebutton"
-                } else {
-                    return "iphone"
-                }
-            } else {
-                return "rectangle"
-            }
-        }()
-        
-        let displayReport = UIAction(title: "Display Report",
-                                     image: UIImage(systemName: deviceSymbol), handler: { _ in
-            self.displayReport()
-        })
-        
-        let respring = UIAction(title: "Restart Spring" + "Board",
-                                image: UIImage(systemName: "apps.iphone"), handler: { _ in
-            
-            guard let window = UIApplication.shared.windows.first else { return }
-            
-            window.layer.cornerRadius = UIScreen.main.value(forKey: "_displ" + "ayCorn" + "erRa" + "dius") as! CGFloat
-            window.layer.masksToBounds = true
-            
-            UIViewPropertyAnimator(duration: 0.5, dampingRatio: 1) {
-                window.transform = .init(scaleX: 0.96, y: 0.96)
-                window.alpha = 0
-            }.startAnimation()
-            
-            // Concurrently run these snapshots to decrease the time to crash.
-            for _ in 0...1000 {
-                DispatchQueue.global(qos: .default).async {
-                    
-                    // This will cause jetsam to terminate SpringBoard.
-                    while true {
-                        window.snapshotView(afterScreenUpdates: false)
-                    }
-                }
-            }
-        })
-        
-        debugActions.append(contentsOf: [viewFrames, systemReport, displayReport, respring])
-        
-        let debugMenu = UIMenu(title: "", options: .displayInline,
-                                  children: [UIMenu(title: "Debug", image: UIImage(systemName: "ant"),
-                                                    children: debugActions)])
-        
-        var menuContent: [UIMenuElement] = []
-        
         if consoleTextView.text != "" {
             menuContent.append(contentsOf: [share, consoleActions])
         } else {
             menuContent.append(resize)
         }
-        menuContent.append(debugMenu)
+        
+        if showDebugMenu {
+            var debugActions: [UIMenuElement] = []
+            
+            var frameSymbol = "rectangle.3.offgrid"
+            
+            if #available(iOS 15, *) {
+                frameSymbol = "square.inset.filled"
+                
+                let deferredUserDefaultsList = UIDeferredMenuElement.uncached { completion in
+                    var actions: [UIAction] = []
+                    
+                    let keys: [String] = {
+                        
+                        if self.showAllUserDefaultsKeys {
+                            return UserDefaults.standard.dictionaryRepresentation().map { $0.key }
+                        }
+                        
+                        // Show keys the developer has added to the app (+ LocalConsole keys), excluding all of Apple's keys.
+                        if let bundle: String = Bundle.main.bundleIdentifier {
+                            let preferencePath: String = NSHomeDirectory() + "/Library/Preferences/\(bundle).plist"
+                            
+                            let _keys = NSDictionary(contentsOfFile: preferencePath)?.allKeys as! [String]
+                            
+                            return _keys.filter {
+                                !$0.contains("LocalConsole.")
+                            }
+                        }
+                        
+                        return []
+                    }()
+                    
+                    if keys.isEmpty {
+                        actions.append(UIAction(title: "No Entries",
+                                                image: nil, attributes: .disabled, handler: { _ in }
+                                               ))
+                    } else {
+                        for key in keys.sorted(by: { $0.lowercased() < $1.lowercased() }) {
+                            
+                            // Old LocalConsole Key Cleanup
+                            guard !key.contains("LocalConsole_") else {
+                                UserDefaults.standard.removeObject(forKey: key)
+                                continue
+                            }
+                            
+                            if let value = UserDefaults.standard.value(forKey: key) {
+                                let action = UIAction(title: key, image: nil) { _ in
+                                    let alertController = UIAlertController(title: key,
+                                                                            message: nil,
+                                                                            preferredStyle: .alert)
+                                    
+                                    let headerParagraphStyle = NSMutableParagraphStyle()
+                                    headerParagraphStyle.paragraphSpacing = 6
+                                    let contentParagraphStyle = NSMutableParagraphStyle()
+                                    
+                                    let attributes: [NSAttributedString.Key: Any] = [
+                                        .paragraphStyle: contentParagraphStyle,
+                                        .foregroundColor: UIColor.label,
+                                        .font: UIFont.systemFont(ofSize: 13, weight: .semibold, design: .monospaced)
+                                    ]
+                                    
+                                    let attributedTitle: NSMutableAttributedString = {
+                                        
+                                        let attributedString = NSMutableAttributedString(string: "Key\n" + key, attributes: attributes)
+                                        attributedString.addAttributes(
+                                            [NSAttributedString.Key.foregroundColor : UIColor.label.withAlphaComponent(0.5),
+                                             NSAttributedString.Key.paragraphStyle : headerParagraphStyle],
+                                            range: NSRange(location: 0, length: 3))
+                                        
+                                        return attributedString
+                                    }()
+                                    
+                                    let attributedMessage: NSMutableAttributedString = {
+                                        
+                                        let attributedString = NSMutableAttributedString(string: "\nValue\n" + "\(value)", attributes: attributes)
+                                        attributedString.addAttributes(
+                                            [NSAttributedString.Key.foregroundColor : UIColor.label.withAlphaComponent(0.5),
+                                             NSAttributedString.Key.paragraphStyle : headerParagraphStyle],
+                                            range: NSRange(location: 0, length: 7))
+                                        
+                                        return attributedString
+                                    }()
+                                    
+                                    alertController.setValue(attributedTitle, forKey: "attributedTitle")
+                                    alertController.setValue(attributedMessage, forKey: "attributedMessage")
+                                    
+                                    alertController.addAction(UIAlertAction(title: "Copy Value", style: .default, handler: { _ in
+                                        UIPasteboard.general.string = "\(value)"
+                                    }))
+                                    alertController.addAction(UIAlertAction(title: "Clear Value", style: .destructive, handler: { _ in
+                                        UserDefaults.standard.removeObject(forKey: key)
+                                    }))
+                                    alertController.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { _ in
+                                    }))
+                                    
+                                    self.viewController.present(alertController,
+                                                                animated: true)
+                                }
+                                action.subtitle = "\(value)"
+                                actions.append(action)
+                            }
+                        }
+                        
+                        
+                        actions.append(
+                            UIAction(title: "Clear Defaults",
+                                     image: UIImage(systemName: "trash"), attributes: .destructive, handler: { _ in
+                                         keys.forEach {
+                                             UserDefaults.standard.removeObject(forKey: $0)
+                                         }
+                                     })
+                        )
+                    }
+                    
+                    
+                    completion(actions)
+                }
+                
+                let userDefaults = UIMenu(title: "UserDefaults", image: UIImage(systemName: "doc.badge.gearshape"), children: [deferredUserDefaultsList])
+                
+                debugActions.append(userDefaults)
+            }
+            
+            
+            let viewFrames = UIAction(title: debugBordersEnabled ? "Hide View Frames" : "Show View Frames",
+                                      image: UIImage(systemName: frameSymbol), handler: { _ in
+                self.debugBordersEnabled.toggle()
+                self.menuButton.menu = self.makeMenu()
+            })
+            
+            let systemReport = UIAction(title: "System Report",
+                                        image: UIImage(systemName: "cpu"), handler: { _ in
+                self.systemReport()
+            })
+            
+            // Show the right glyph for the current device being used.
+            let deviceSymbol: String = {
+                
+                let hasHomeButton = UIScreen.main.value(forKey: "_displ" + "ayCorn" + "erRa" + "dius") as! CGFloat == 0
+                
+                if UIDevice.current.userInterfaceIdiom == .pad {
+                    if hasHomeButton {
+                        return "ipad.homebutton"
+                    } else {
+                        return "ipad"
+                    }
+                } else if UIDevice.current.userInterfaceIdiom == .phone {
+                    if hasHomeButton {
+                        return "iphone.homebutton"
+                    } else {
+                        return "iphone"
+                    }
+                } else {
+                    return "rectangle"
+                }
+            }()
+            
+            let displayReport = UIAction(title: "Display Report",
+                                         image: UIImage(systemName: deviceSymbol), handler: { _ in
+                self.displayReport()
+            })
+            
+            let respring = UIAction(title: "Restart Spring" + "Board",
+                                    image: UIImage(systemName: "apps.iphone"), handler: { _ in
+                
+                guard let window = UIApplication.shared.windows.first else { return }
+                
+                window.layer.cornerRadius = UIScreen.main.value(forKey: "_displ" + "ayCorn" + "erRa" + "dius") as! CGFloat
+                window.layer.masksToBounds = true
+                
+                UIViewPropertyAnimator(duration: 0.5, dampingRatio: 1) {
+                    window.transform = .init(scaleX: 0.96, y: 0.96)
+                    window.alpha = 0
+                }.startAnimation()
+                
+                // Concurrently run these snapshots to decrease the time to crash.
+                for _ in 0...1000 {
+                    DispatchQueue.global(qos: .default).async {
+                        
+                        // This will cause jetsam to terminate SpringBoard.
+                        while true {
+                            window.snapshotView(afterScreenUpdates: false)
+                        }
+                    }
+                }
+            })
+            
+            debugActions.append(contentsOf: [viewFrames, systemReport, displayReport, respring])
+            
+            let debugMenu = UIMenu(title: "", options: .displayInline,
+                                   children: [UIMenu(title: "Debug", image: UIImage(systemName: "ant"),
+                                                     children: debugActions)])
+            
+            menuContent.append(debugMenu)
+        }
         
         return UIMenu(title: "", children: menuContent)
     }
