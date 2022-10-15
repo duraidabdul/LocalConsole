@@ -1179,28 +1179,19 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
 
 // Custom window for the console to appear above other windows while passing touches down.
 class ConsoleWindow: UIWindow {
-    
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-        
         if let hitView = super.hitTest(point, with: event) {
-            return hitView.isKind(of: ConsoleWindow.self) ? nil : hitView
+            if hitView.isKind(of: PassthroughView.self) {
+                return nil
+            }
+            return hitView
         }
         return super.hitTest(point, with: event)
     }
 }
 
-// Custom view for the console to appear above other windows while passing touches down.
-class PassthroughView: UIView {
-    
-    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-        
-        if let hitView = super.hitTest(point, with: event) {
-            return hitView.isKind(of: PassthroughView.self) ? nil : hitView
-        }
-        return super.hitTest(point, with: event)
-    }
-}
-
+// Custom view that is passed through if it is the returned hitTest for ConsoleWindow.
+class PassthroughView: UIView { }
 
 import UIKit.UIGestureRecognizerSubclass
 
