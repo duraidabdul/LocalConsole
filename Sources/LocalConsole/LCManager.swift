@@ -580,10 +580,9 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     // MARK: Handle keyboard show/hide.
     private var keyboardHeight: CGFloat? = nil {
         didSet {
-            
             temporaryKeyboardHeightValueTracker = oldValue
             
-            if consoleView.center != possibleEndpoints[0] && consoleView.center != possibleEndpoints[1] {
+            if possibleEndpoints.count > 2, consoleView.center != possibleEndpoints[0] && consoleView.center != possibleEndpoints[1] {
                 let nearestTargetPosition = nearestTargetTo(consoleView.center, possibleTargets: possibleEndpoints.suffix(2))
                 
                 UIViewPropertyAnimator(duration: 0.55, dampingRatio: 1) {
