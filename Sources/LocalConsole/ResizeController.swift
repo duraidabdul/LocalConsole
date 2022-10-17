@@ -15,7 +15,7 @@ class ResizeController {
     lazy var platterView = PlatterView(frame: .zero)
     
     var consoleCenterPoint: CGPoint {
-        let containerViewSize = LCManager.shared.viewController.view.frame.size
+        let containerViewSize = LCManager.shared.consoleViewController.view.frame.size
         
         return CGPoint(x: (containerViewSize.width * UIScreen.main.scale / 2).rounded() / UIScreen.main.scale,
                        y: (containerViewSize.height * UIScreen.main.scale / 2).rounded() / UIScreen.main.scale
@@ -50,7 +50,7 @@ class ResizeController {
     
     lazy var bottomGrabber: UIView = {
         let view = UIView()
-        LCManager.shared.consoleWindow?.addSubview(view)
+        LCManager.shared.consoleViewController.view.addSubview(view)
         
         view.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
@@ -80,7 +80,7 @@ class ResizeController {
     
     lazy var rightGrabber: UIView = {
         let view = UIView()
-        LCManager.shared.consoleWindow?.addSubview(view)
+        LCManager.shared.consoleViewController.view.addSubview(view)
         
         view.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
@@ -117,7 +117,7 @@ class ResizeController {
             _ = rightGrabber
             
             // Ensure initial autolayout is performed unanimated.
-            LCManager.shared.consoleWindow?.layoutIfNeeded()
+            LCManager.shared.consoleViewController.view.layoutIfNeeded()
             
             if #available(iOS 15, *) {
                 FrameRateRequest.shared.perform(duration: 1.5)
@@ -138,17 +138,17 @@ class ResizeController {
                 }
                 
                 // Ensure background color animates in right the first time.
-                LCManager.shared.consoleWindow?.backgroundColor = .clear
+                LCManager.shared.consoleViewController.view.backgroundColor = .clear
                 
                 UIViewPropertyAnimator(duration: 0.6, dampingRatio: 1) {
                     LCManager.shared.consoleView.center = self.consoleCenterPoint
                     
                     // Update grabbers (layout constraints)
-                    LCManager.shared.consoleWindow?.layoutIfNeeded()
+                    LCManager.shared.consoleViewController.view.layoutIfNeeded()
                     
                     LCManager.shared.menuButton.alpha = 0
                     
-                    LCManager.shared.consoleWindow?.backgroundColor = UIColor(dynamicProvider: { traitCollection in
+                    LCManager.shared.consoleViewController.view.backgroundColor = UIColor(dynamicProvider: { traitCollection in
                         UIColor(white: 0, alpha: traitCollection.userInterfaceStyle == .light ? 0.1 : 0.3)
                     })
                 }.startAnimation()
@@ -181,11 +181,11 @@ class ResizeController {
                     LCManager.shared.snapToCachedEndpoint()
                     
                     // Update grabbers (layout constraints)
-                    LCManager.shared.consoleWindow?.layoutIfNeeded()
+                    LCManager.shared.consoleViewController.view.layoutIfNeeded()
                     
                     LCManager.shared.menuButton.alpha = 1
                     
-                    LCManager.shared.consoleWindow?.backgroundColor = .clear
+                    LCManager.shared.consoleViewController.view.backgroundColor = .clear
                 }.startAnimation()
                 
                 UIViewPropertyAnimator(duration: 0.2, dampingRatio: 1) { [self] in
@@ -277,7 +277,7 @@ class ResizeController {
                 LCManager.shared.consoleView.center.y = self.consoleCenterPoint.y
                 
                 // Animate autolayout updates.
-                LCManager.shared.consoleWindow?.layoutIfNeeded()
+                LCManager.shared.consoleViewController.view.layoutIfNeeded()
             }.startAnimation()
             
             UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
@@ -358,7 +358,7 @@ class ResizeController {
                 LCManager.shared.consoleView.center.x = (UIScreen.main.nativeBounds.width * 1/2).rounded() / UIScreen.main.scale
                 
                 // Animate autolayout updates.
-                LCManager.shared.consoleWindow?.layoutIfNeeded()
+                LCManager.shared.consoleViewController.view.layoutIfNeeded()
             }.startAnimation()
             
             UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
@@ -396,8 +396,8 @@ class PlatterView: UIView {
         
         addSubview(blurView)
         
-        LCManager.shared.viewController.view.addSubview(self)
-        LCManager.shared.viewController.view.sendSubviewToBack(self)
+        LCManager.shared.consoleViewController.view.addSubview(self)
+        LCManager.shared.consoleViewController.view.sendSubviewToBack(self)
         
         _ = backgroundButton
         
@@ -466,8 +466,8 @@ class PlatterView: UIView {
             self.dismiss()
         }))
         backgroundButton.frame.size = CGSize(width: self.frame.size.width, height: possibleEndpoints[0].y + 30)
-        LCManager.shared.consoleWindow?.addSubview(backgroundButton)
-        LCManager.shared.consoleWindow?.sendSubviewToBack(backgroundButton)
+        LCManager.shared.consoleViewController.view.addSubview(backgroundButton)
+        LCManager.shared.consoleViewController.view.sendSubviewToBack(backgroundButton)
         return backgroundButton
     }()
     
@@ -525,7 +525,7 @@ class PlatterView: UIView {
                 LCManager.shared.consoleSize = LCManager.shared.defaultConsoleSize
                 LCManager.shared.lumaHeightAnchor.constant = LCManager.shared.defaultConsoleSize.height
                 LCManager.shared.consoleView.center = ResizeController.shared.consoleCenterPoint
-                LCManager.shared.consoleWindow?.layoutIfNeeded()
+                LCManager.shared.consoleViewController.view.layoutIfNeeded()
             }.startAnimation()
             
         }), for: .touchUpInside)
@@ -544,7 +544,7 @@ class PlatterView: UIView {
     }()
     
     func configureFrame() {
-        self.frame.size = LCManager.shared.viewController.view.frame.size
+        self.frame.size = LCManager.shared.consoleViewController.view.frame.size
         // Make sure bottom doesn't show on upwards pan.
         self.frame.size.height += 50
         self.frame.origin = possibleEndpoints[1]
@@ -593,7 +593,7 @@ class PlatterView: UIView {
     }
     
     var possibleEndpoints: [CGPoint] { return [CGPoint(x: 0, y: (UIScreen.hasRoundedCorners ? 44 : -8) + 63),
-                                               CGPoint(x: 0, y: LCManager.shared.viewController.view.frame.size.height + 5)]
+                                               CGPoint(x: 0, y: LCManager.shared.consoleViewController.view.frame.size.height + 5)]
     }
     
     var initialPlatterOriginY = CGFloat.zero
