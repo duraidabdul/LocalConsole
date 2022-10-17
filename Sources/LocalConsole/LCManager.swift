@@ -355,7 +355,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     
     /// Adds a consoleViewController to the app's main window.
     func configureConsoleViewController() {
-        var windowSceneFound = false
+        var windowFound = false
         
         // Update console cached based on last-cached origin.
         func updateConsoleOrigin() {
@@ -373,26 +373,34 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         }
         
         // Configure console window.
-        func fetchWindowScene() {
-            let windowScene = UIApplication.shared
-                .connectedScenes
-                .filter { $0.activationState == .foregroundActive }
-                .first
-            
-            if let windowScene = windowScene as? UIWindowScene, let keyWindow = windowScene.keyWindow {
-                windowSceneFound = true
+        func fetchWindow() -> UIWindow? {
+            if #available(iOS 15.0, *) {
+                let windowScene = UIApplication.shared
+                    .connectedScenes
+                    .filter { $0.activationState == .foregroundActive }
+                    .first
                 
-                SwizzleTool().swizzleContextMenuReverseOrder()
-                
-                consoleViewController.view = PassthroughView()
-                consoleViewController.view.addSubview(consoleView)
-                
-                keyWindow.addSubview(consoleViewController.view)
-                consoleViewController.view.frame = keyWindow.bounds
-                consoleViewController.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-                
-                updateConsoleOrigin()
+                if let windowScene = windowScene as? UIWindowScene, let keyWindow = windowScene.keyWindow {
+                    return keyWindow
+                }
+                return nil
+            } else {
+                return UIApplication.shared.windows.first
             }
+            
+        }
+        
+        func addConsoleToWindow(window: UIWindow) {
+            SwizzleTool().swizzleContextMenuReverseOrder()
+            
+            consoleViewController.view = PassthroughView()
+            consoleViewController.view.addSubview(consoleView)
+            
+            window.addSubview(consoleViewController.view)
+            consoleViewController.view.frame = window.bounds
+            consoleViewController.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            
+            updateConsoleOrigin()
         }
         
         /// Ensures the window is configured (i.e. scene has been found). If not, delay and wait for a scene to prepare itself, then try again.
@@ -401,9 +409,12 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
             
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [self] in
                 
-                guard !windowSceneFound else { return }
+                guard !windowFound else { return }
                 
-                fetchWindowScene()
+                if let window = fetchWindow() {
+                    windowFound = true
+                    addConsoleToWindow(window: window)
+                }
                 
                 if isVisible {
                     isVisible = false
