@@ -145,7 +145,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     lazy var consoleTextView = InvertedTextView() 
     
     /// Button that reveals menu.
-    lazy var menuButton = UIButton()
+    lazy var menuButton = ConsoleMenuButton()
     
     /// Tracks whether the PiP console is in text view scroll mode or pan mode.
     var scrollLocked = true
@@ -319,10 +319,12 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         let diameter = CGFloat(30)
         
         // This tuned button frame is used to adjust where the menu appears.
-        menuButton = UIButton(frame: CGRect(x: consoleView.bounds.width - 44,
-                                            y: consoleView.bounds.height - 36,
-                                            width: 44,
-                                            height: 36 + 4 /*Offests the context menu by the desired amount*/))
+        menuButton.frame = CGRect(
+            x: consoleView.bounds.width - 44,
+            y: consoleView.bounds.height - 36,
+            width: 44,
+            height: 36 + 4 /*Offests the context menu by the desired amount*/
+        )
         menuButton.autoresizingMask = [.flexibleLeftMargin, .flexibleTopMargin]
         
         let circleFrame = CGRect(
@@ -391,16 +393,24 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         }
         
         func addConsoleToWindow(window: UIWindow) {
-            SwizzleTool().swizzleContextMenuReverseOrder()
+            
+            window.addSubview(consoleViewController.view)
+            window.rootViewController?.addChild(consoleViewController)
             
             consoleViewController.view = PassthroughView()
             consoleViewController.view.addSubview(consoleView)
             
-            window.addSubview(consoleViewController.view)
             consoleViewController.view.frame = window.bounds
             consoleViewController.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
             
             updateConsoleOrigin()
+            
+            SwizzleTool().swizzleContextMenuReverseOrder()
+            
+            // Ensure console view always stays above other views.
+            SwizzleTool().swizzleDidAddSubview {
+                window.bringSubviewToFront(self.consoleViewController.view)
+            }
         }
         
         /// Ensures the window is configured (i.e. scene has been found). If not, delay and wait for a scene to prepare itself, then try again.
@@ -426,8 +436,10 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     }
     
     func snapToCachedEndpoint() {
-        let cachedConsolePosition = CGPoint(x: UserDefaults.standard.object(forKey: "LocalConsole.X") as? CGFloat ?? possibleEndpoints.first!.x,
-                                            y: UserDefaults.standard.object(forKey: "LocalConsole.Y") as? CGFloat ?? possibleEndpoints.first!.y)
+        let cachedConsolePosition = CGPoint(
+            x: UserDefaults.standard.object(forKey: "LocalConsole.X") as? CGFloat ?? possibleEndpoints.first!.x,
+            y: UserDefaults.standard.object(forKey: "LocalConsole.Y") as? CGFloat ?? possibleEndpoints.first!.y
+        )
         
         consoleView.center = cachedConsolePosition // Update console center so possibleEndpoints are calculated correctly.
         consoleView.center = nearestTargetTo(cachedConsolePosition, possibleTargets: possibleEndpoints)
@@ -1238,6 +1250,20 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     }
 }
 
+/// Custom button that pauses console window swizzling to allow the console menu's presenting view controller to remain the top view controller.
+class ConsoleMenuButton: UIButton {
+    override func contextMenuInteraction(_ interaction: UIContextMenuInteraction, willDisplayMenuFor configuration: UIContextMenuConfiguration, animator: UIContextMenuInteractionAnimating?) {
+        super.contextMenuInteraction(interaction, willDisplayMenuFor: configuration, animator: animator)
+        
+        SwizzleTool.pauseDidAddSubviewSwizzledClosure = true
+    }
+    
+    override func contextMenuInteraction(_ interaction: UIContextMenuInteraction, willEndFor configuration: UIContextMenuConfiguration, animator: UIContextMenuInteractionAnimating?) {
+        
+        SwizzleTool.pauseDidAddSubviewSwizzledClosure = false
+    }
+}
+
 // Custom view that is passes touches .
 class PassthroughView: UIView {
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
@@ -1290,7 +1316,6 @@ class SwizzleTool: NSObject {
     }
 
     @objc func swizzled_reverses_Action_Order() -> Bool {
-        
         if let menu = self.value(forKey: "displayed" + "Menu") as? UIMenu,
            menu.title == "Debug" || menu.title == "User" + "Defaults" {
             return false
@@ -1302,8 +1327,28 @@ class SwizzleTool: NSObject {
         
         return false
     }
-}
+    
+    static var swizzledDidAddSubviewClosure: (() -> Void)?
+    static var pauseDidAddSubviewSwizzledClosure: Bool = false
+    
+    func swizzleDidAddSubview(_ closure: @escaping () -> Void) {
+        guard let originalMethod = class_getInstanceMethod(UIWindow.self, #selector(UIWindow.didAddSubview(_:))),
+              let swizzledMethod = class_getInstanceMethod(SwizzleTool.self, #selector(swizzled_did_add_subview(_:)))
+        else { Swift.print("Swizzle Error Occurred"); return }
+        
+        method_exchangeImplementations(originalMethod, swizzledMethod)
+        
+        Self.swizzledDidAddSubviewClosure = closure
+    }
 
+    @objc func swizzled_did_add_subview(_ subview: UIView) {
+        guard !Self.pauseDidAddSubviewSwizzledClosure else { return }
+        
+        if let closure = Self.swizzledDidAddSubviewClosure {
+            closure()
+        }
+    }
+}
 
 class LumaView: UIView {
     lazy var visualEffectView: UIView = {
