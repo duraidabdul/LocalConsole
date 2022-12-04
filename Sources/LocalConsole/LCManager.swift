@@ -278,9 +278,11 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         
         let borderWidth = 2 - 1 / consoleView.traitCollection.displayScale
         
-        borderView.frame = CGRect(x: -borderWidth, y: -borderWidth,
-                                  width: consoleSize.width + 2 * borderWidth,
-                                  height: consoleSize.height + 2 * borderWidth)
+        borderView.frame = CGRect(
+            x: -borderWidth, y: -borderWidth,
+            width: consoleSize.width + 2 * borderWidth,
+            height: consoleSize.height + 2 * borderWidth
+        )
         borderView.layer.borderWidth = borderWidth
         borderView.layer.borderColor = UIColor(white: 1, alpha: 0.08).cgColor
         borderView.layer.cornerRadius = consoleView.layer.cornerRadius + 1
@@ -494,7 +496,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
         }
     }
     
-    // This menu is included in the console's main menu.
+    // Specify a UIMenu or UIAction to be included in the console's main menu.
     public var menu: UIMenuElement? = nil {
         didSet {
             menuButton.menu = makeMenu()
@@ -523,7 +525,7 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
                 lumaWidthAnchor.constant = -34
                 lumaHeightAnchor.constant = 96
                 UIViewPropertyAnimator(duration: 0.4, dampingRatio: 1) { [self] in
-                    lumaView.layer.cornerRadius = 9
+                    lumaView.layer.cornerRadius = 10
                     consoleView.layoutIfNeeded()
                 }.startAnimation(afterDelay: 0.06)
                 
@@ -846,13 +848,22 @@ public class LCManager: NSObject, UIGestureRecognizerDelegate {
     public var showAllUserDefaultsKeys = false
     
     func makeMenu() -> UIMenu {
-        let share = UIAction(title: "Share Text...", image: UIImage(systemName: "square.and.arrow.up")) { _ in
-            let activityViewController = UIActivityViewController(
-                activityItems: [self.consoleTextView.text ?? ""],
-                applicationActivities: nil
-            )
-            self.consoleViewController.present(activityViewController, animated: true)
-        }
+        let share: UIAction = {
+            // Something here causes a crash < iOS 15. Fall back to copy text for iOS 15 and below.
+            if #available(iOS 16, *) {
+                return UIAction(title: "Share Text...", image: UIImage(systemName: "square.and.arrow.up")) { _ in
+                    let activityViewController = UIActivityViewController(
+                        activityItems: [self.consoleTextView.text ?? ""],
+                        applicationActivities: nil
+                    )
+                    self.consoleViewController.present(activityViewController, animated: true)
+                }
+            } else {
+                return UIAction(title: "Copy Text", image: UIImage(systemName: "doc.on.doc")) { _ in
+                    UIPasteboard.general.string = self.consoleTextView.text
+                }
+            }
+        }()
         
         let resize = UIAction(title: "Resize Console", image: UIImage(systemName: "arrow.up.backward.and.arrow.down.forward")) { _ in
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
